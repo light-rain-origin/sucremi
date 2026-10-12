@@ -1,0 +1,15 @@
+{
+  "name": "sucremi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sucremi 个人开发工作台（monorepo 根）。前后端分目录、独立构建。",
+  "scripts": {
+    "web:dev": "npm --prefix apps/web run dev",
+    "web:build": "npm --prefix apps/web run build",
+    "web:test": "npm --prefix apps/web run test:unit -- --run",
+    "web:lint": "npm --prefix apps/web run lint"
+  },
+  "engines": {
+    "node": ">=24.12.0"
+  }
+}
