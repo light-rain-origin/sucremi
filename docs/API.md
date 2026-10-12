@@ -76,3 +76,12 @@
 
 `data` 为单个 `ProjectResponse`（含 `id/name/summary/goal/status/progress/archived/createdAt/updatedAt`），
 列表接口 `data` 为 `PageResult`（`list/total/page/size`）。错误：参数校验 400/`40000`，不存在 404/`40400`。
+
+### 首页概览 Dashboard
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/v1/dashboard/summary` | 当前用户的统计 + 最近项目 |
+
+`data`：`{ totalProjects, activeProjects, pausedProjects, doneProjects, archivedProjects, recentProjects[] }`。
+计数均限当前用户；前四项为未归档项目，`archivedProjects` 为已归档数；`recentProjects` 为最近更新的前 5 个未归档项目（`ProjectResponse` 列表）。
