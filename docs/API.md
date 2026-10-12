@@ -60,3 +60,19 @@
   "timestamp": 1760160000000
 }
 ```
+
+### 项目 Project
+
+所有接口在当前用户范围内操作；跨用户或不存在的项目一律返回 404。请求体不接收 `user_id`。
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/v1/projects` | 列表。query：`q`(名称/简介模糊)、`status`、`archived`(默认 false)、`page`(默认 1)、`size`(默认 20，上限 100)、`sort`(默认 `updatedAt,desc`；字段白名单：updatedAt/createdAt/name/progress) |
+| POST | `/api/v1/projects` | 创建。body：`name`(必填,≤100)、`summary`(≤500)、`goal`、`status`(默认 ACTIVE)、`progress`(0-100,默认 0) |
+| GET | `/api/v1/projects/{id}` | 详情 |
+| PUT | `/api/v1/projects/{id}` | 编辑。body：`name`(必填)、`summary`、`goal`、`status`(必填)、`progress`(必填,0-100) |
+| POST | `/api/v1/projects/{id}/archive` | 归档(软) |
+| POST | `/api/v1/projects/{id}/unarchive` | 取消归档 |
+
+`data` 为单个 `ProjectResponse`（含 `id/name/summary/goal/status/progress/archived/createdAt/updatedAt`），
+列表接口 `data` 为 `PageResult`（`list/total/page/size`）。错误：参数校验 400/`40000`，不存在 404/`40400`。
