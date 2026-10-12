@@ -67,6 +67,12 @@
             <artifactId>mybatis-plus-spring-boot4-starter</artifactId>
             <version>${mybatis-plus.version}</version>
         </dependency>
+        <!-- 分页等基于 JSqlParser 的内置拦截器自 3.5.9 起拆到独立模块 -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>${mybatis-plus.version}</version>
+        </dependency>
 
         <!-- Flyway: database migrations (version managed by Spring Boot parent) -->
         <!-- Spring Boot 4 moved Flyway auto-configuration into the spring-boot-flyway
