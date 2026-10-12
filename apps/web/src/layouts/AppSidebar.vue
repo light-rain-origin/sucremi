@@ -13,19 +13,19 @@ const items: { to: string; label: string; exact: boolean; icon: IconName }[] = [
 <template>
   <aside class="sidebar">
     <div class="brand">
-      <!-- 品牌标记：粉紫渐变瓷贴 + 白色字母 + 小星星，替代原先的纯色方块 -->
+      <!-- 品牌标记：渐变瓷贴 + 白色字母 + 小星星。颜色全部走品牌 token，随皮肤变化 -->
       <span class="brand-mark">
         <svg class="brand-tile" viewBox="0 0 34 34" aria-hidden="true" focusable="false">
           <defs>
             <linearGradient id="scBrandTile" x1="2" y1="1" x2="32" y2="33" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#F7A8CC" />
-              <stop offset="1" stop-color="#9B86F8" />
+              <stop class="brand-stop-from" />
+              <stop class="brand-stop-to" offset="1" />
             </linearGradient>
           </defs>
           <rect x="0" y="0" width="34" height="34" rx="11" fill="url(#scBrandTile)" />
           <path
+            class="brand-sparkle"
             d="M25.2 5.4l.85 2.35 2.35.85-2.35.85-.85 2.35-.85-2.35L22 8.6l2.35-.85z"
-            fill="#fff"
             opacity=".92"
           />
         </svg>
@@ -53,6 +53,9 @@ const items: { to: string; label: string; exact: boolean; icon: IconName }[] = [
       </RouterLink>
     </nav>
 
+    <!-- 角色插画装饰位：高度与图片都来自皮肤 token，默认高度 0 → 不占位、不留空洞 -->
+    <div class="sidebar-art" aria-hidden="true" />
+
     <div class="sidebar-foot">
       <AppIcon name="sparkle" :size="15" />
       <span>私人工作台</span>
@@ -67,7 +70,7 @@ const items: { to: string; label: string; exact: boolean; icon: IconName }[] = [
   display: flex;
   flex-direction: column;
   padding: 18px 14px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, var(--sc-panel) 100%);
+  background: var(--sc-sidebar-bg);
   border-right: 1px solid var(--sc-border-soft);
 }
 
@@ -83,7 +86,7 @@ const items: { to: string; label: string; exact: boolean; icon: IconName }[] = [
   width: 34px;
   height: 34px;
   flex-shrink: 0;
-  filter: drop-shadow(0 4px 10px rgba(199, 150, 210, 0.35));
+  filter: var(--sc-brand-glow);
 }
 
 .brand-tile {
@@ -92,13 +95,26 @@ const items: { to: string; label: string; exact: boolean; icon: IconName }[] = [
   height: 34px;
 }
 
+/* SVG 的渐变端点用 CSS 上色：表现属性里写 var() 不生效，类选择器可以 */
+.brand-stop-from {
+  stop-color: var(--sc-brand-tile-from);
+}
+
+.brand-stop-to {
+  stop-color: var(--sc-brand-tile-to);
+}
+
+.brand-sparkle {
+  fill: var(--sc-brand-on);
+}
+
 .brand-letter {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  color: #fff;
-  font-size: 17px;
+  color: var(--sc-brand-on);
+  font-size: var(--sc-font-size-2xl);
   font-weight: 800;
   line-height: 1;
 }
@@ -111,14 +127,14 @@ const items: { to: string; label: string; exact: boolean; icon: IconName }[] = [
 }
 
 .brand-name {
-  font-size: 17px;
+  font-size: var(--sc-font-size-2xl);
   font-weight: 700;
   color: var(--sc-text);
   line-height: 1.2;
 }
 
 .brand-sub {
-  font-size: 11px;
+  font-size: var(--sc-font-size-xs);
   color: var(--sc-text-placeholder);
   letter-spacing: 0.06em;
 }
@@ -158,10 +174,10 @@ const items: { to: string; label: string; exact: boolean; icon: IconName }[] = [
   min-width: 0;
 }
 
-/* 选中态：淡粉→淡紫轻渐变 + 右侧细小强调标记 */
+/* 选中态：品牌色轻渐变 + 右侧细小强调标记 */
 .nav-item.active {
-  background: linear-gradient(100deg, var(--sc-pink-soft) 0%, var(--sc-purple-soft) 100%);
-  color: var(--sc-pink-strong);
+  background: var(--sc-nav-active-bg);
+  color: var(--sc-brand-strong);
   font-weight: 600;
 }
 
@@ -182,6 +198,19 @@ const items: { to: string; label: string; exact: boolean; icon: IconName }[] = [
   opacity: 1;
 }
 
+/* 角色插画：高度由 --sc-character-height 决定，默认 0 —— 未提供素材时完全不可见。
+   margin-top: auto 让它在有高度时被推到底部；高度为 0 时与 .sidebar-foot 的 auto 边距
+   分享剩余空间，页脚依然贴底，因此默认状态下与引入此元素之前没有区别。 */
+.sidebar-art {
+  height: var(--sc-character-height);
+  margin-top: auto;
+  background-image: var(--sc-character-image);
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: contain;
+  pointer-events: none;
+}
+
 .sidebar-foot {
   margin-top: auto;
   display: flex;
@@ -191,8 +220,8 @@ const items: { to: string; label: string; exact: boolean; icon: IconName }[] = [
   border-radius: var(--sc-radius-lg);
   background: var(--sc-gradient-soft);
   border: 1px solid var(--sc-border-soft);
-  color: var(--sc-purple-strong);
-  font-size: 12px;
+  color: var(--sc-brand-alt-strong);
+  font-size: var(--sc-font-size-sm);
   font-weight: 500;
 }
 

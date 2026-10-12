@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
+import SkinSwitcher from '@/components/SkinSwitcher.vue'
 
 defineEmits<{ toggle: [] }>()
 
@@ -18,7 +19,8 @@ const title = computed(() => (route.meta.title as string) || 'Sucremi')
     <span class="title-mark" aria-hidden="true" />
     <h1 class="page-title">{{ title }}</h1>
     <div class="topbar-right">
-      <!-- 预留：用户菜单 / 操作入口（接入认证后填充） -->
+      <SkinSwitcher />
+      <!-- 预留：用户菜单等操作入口（接入认证后填充） -->
     </div>
   </header>
 </template>
@@ -43,12 +45,15 @@ const title = computed(() => (route.meta.title as string) || 'Sucremi')
 
 .page-title {
   margin: 0;
-  font-size: 17px;
+  font-size: var(--sc-font-size-2xl);
   font-weight: 600;
   color: var(--sc-text);
 }
 
 .topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-left: auto;
 }
 
@@ -65,7 +70,7 @@ const title = computed(() => (route.meta.title as string) || 'Sucremi')
 }
 
 .menu-toggle:hover {
-  color: var(--sc-purple-strong);
+  color: var(--sc-brand-alt-strong);
 }
 
 @media (max-width: 768px) {

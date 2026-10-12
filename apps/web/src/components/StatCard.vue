@@ -54,7 +54,7 @@ withDefaults(defineProps<{ label: string; value: number | string; icon: IconName
 }
 
 .stat-value {
-  font-size: 26px;
+  font-size: var(--sc-font-size-5xl);
   font-weight: 700;
   line-height: 1.15;
   color: var(--tone-strong);
@@ -62,32 +62,33 @@ withDefaults(defineProps<{ label: string; value: number | string; icon: IconName
 }
 
 .stat-label {
-  font-size: 13px;
+  font-size: var(--sc-font-size-md);
   color: var(--sc-text-secondary);
 }
 
+/* 五档色调只是色相差异，取值全部来自皮肤的角色 token */
 .tone-purple {
-  --tone-soft: rgba(155, 134, 248, 0.14);
-  --tone-strong: var(--sc-purple-strong);
+  --tone-soft: var(--sc-stat-purple-soft);
+  --tone-strong: var(--sc-stat-purple-strong);
 }
 
 .tone-pink {
-  --tone-soft: rgba(245, 168, 203, 0.2);
-  --tone-strong: var(--sc-pink-strong);
+  --tone-soft: var(--sc-stat-pink-soft);
+  --tone-strong: var(--sc-stat-pink-strong);
 }
 
 .tone-amber {
-  --tone-soft: rgba(224, 168, 96, 0.18);
-  --tone-strong: var(--sc-warning-strong);
+  --tone-soft: var(--sc-stat-amber-soft);
+  --tone-strong: var(--sc-stat-amber-strong);
 }
 
 .tone-mint {
-  --tone-soft: rgba(95, 185, 139, 0.16);
-  --tone-strong: var(--sc-success-strong);
+  --tone-soft: var(--sc-stat-mint-soft);
+  --tone-strong: var(--sc-stat-mint-strong);
 }
 
 .tone-slate {
-  --tone-soft: rgba(140, 129, 152, 0.14);
-  --tone-strong: #6b6277;
+  --tone-soft: var(--sc-stat-slate-soft);
+  --tone-strong: var(--sc-stat-slate-strong);
 }
 </style>

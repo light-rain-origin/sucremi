@@ -23,15 +23,12 @@ const sidebarOpen = ref(false)
 </template>
 
 <style scoped>
-/* 页面底色：粉 → 淡紫的对角渐变 + 两处柔光，构成 NapCat 式的整体氛围 */
+/* 页面氛围（底色 + 柔光 / 圆点）整条由 --sc-backdrop 提供，皮肤可自由替换多层叠加 */
 .app-shell {
   position: relative;
   display: flex;
   min-height: 100vh;
-  background:
-    radial-gradient(1100px 520px at 4% -10%, rgba(245, 168, 203, 0.32), transparent 62%),
-    radial-gradient(900px 500px at 100% 2%, rgba(155, 134, 248, 0.22), transparent 60%),
-    var(--sc-gradient-page);
+  background: var(--sc-backdrop);
 }
 
 .main-col {
@@ -49,7 +46,7 @@ const sidebarOpen = ref(false)
 .content-inner {
   max-width: var(--sc-content-max);
   margin: 0 auto;
-  padding: 4px 28px 48px;
+  padding: 4px var(--sc-content-pad) 48px;
 }
 
 .sidebar-backdrop {
@@ -62,7 +59,7 @@ const sidebarOpen = ref(false)
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(78, 60, 86, 0.32);
+    background: var(--sc-overlay);
     z-index: 20;
   }
   .content-inner {
