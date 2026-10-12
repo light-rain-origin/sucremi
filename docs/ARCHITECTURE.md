@@ -15,9 +15,11 @@ apps/server   后端（Spring Boot，模块化单体）
 
 - Vue 3 + TypeScript + Vite 构建。
 - 状态：Pinia；路由：Vue Router；UI：Element Plus。
-- Markdown 编辑：Vditor（阶段 0 仅完成依赖评估与安装，未集成完整编辑器）。
+- Markdown 编辑：Vditor（已安装依赖，尚未集成编辑器 —— 留给资料 / 笔记等后续阶段）。
 - 测试：Vitest（jsdom 环境）。
 - 接口调用统一封装在 `src/api/`，约定后端统一响应结构。
+- 目录：页面 `src/views/`、通用组件 `src/components/`、状态 `src/stores/`、类型 `src/types/`、
+  工具 `src/utils/`、路由 `src/router/`。
 - 开发代理：`/api/*` → `http://localhost:8080`（见 `vite.config.ts`），避免跨域。
 
 ## 后端（apps/server）
@@ -32,12 +34,19 @@ apps/server   后端（Spring Boot，模块化单体）
 ```
 com.sucremi
 ├─ ServerApplication           启动类
-├─ common.api.ApiResponse      统一响应结构
-├─ common.exception            BusinessException + 全局异常处理
-└─ health.HealthController     健康检查
+├─ common.api                  ApiResponse / PageResult 统一响应结构
+├─ common.exception            BusinessException / ResourceNotFoundException /
+│                              UnauthenticatedException + 全局异常处理
+├─ common.web                  RequestContext + X-Request-Id 过滤器（MDC 可日志追踪）
+├─ config                      MyBatis-Plus 等框架配置
+├─ identity                    当前用户解析（开发期固定身份 / 失败关闭兜底）
+├─ health.HealthController     健康检查
+├─ project                     项目模块（controller / service / mapper / dto）
+└─ dashboard                   概览统计
 ```
 
-后续业务模块以同样方式按职责新增独立包（如 `project`、`note` 等）。
+业务模块沿用同样方式按职责新增独立包（如 `note`、`task` 等），模块内含各自的
+controller / service / mapper / dto，不建立巨型 Controller / Service。
 
 ## API 约定
 
@@ -45,15 +54,20 @@ com.sucremi
 - 统一响应结构 `ApiResponse{ code, message, data, timestamp }`，`code == 0` 为成功。
 - 全局异常处理统一返回上述结构，**不暴露堆栈或内部细节**。
 
-## 用户数据隔离（预留设计）
+## 用户数据隔离
 
-虽然 V1 为单用户，但从一开始就为多用户隔离预留空间：
+虽然 V1 为单用户，但结构从一开始就按多用户隔离落地，而不是留待日后重构：
 
-- 存在 `app_user` 表作为用户归属锚点。
-- 未来所有业务表统一携带 `user_id`，外键关联 `app_user.id`。
-- 查询在服务层按当前用户过滤。
+- `app_user` 表作为用户归属锚点。
+- 业务表统一携带 `user_id`，外键关联 `app_user.id`（首张业务表 `project` 已如此）。
+- 身份由 `identity` 包的 `CurrentUserResolver` 提供，业务代码不感知具体认证方式：
+  `local`/`dev`/`test` profile 下注入开发期固定身份，其余情况由兜底实现直接拒绝
+  （**失败关闭**，避免无认证状态被误部署到公网）。
+- 查询在 SQL 层按当前用户过滤；写操作按 `id + user_id` 更新，命中 0 行即返回 404 ——
+  **不区分「不存在」与「别人的记录」**，避免泄露资源存在性。
 
-如此可在不重构既有结构的前提下平滑支持多用户。
+决策背景见 `docs/decisions/0001-identity-and-data-ownership.md`。如此可在不重构既有结构的前提下
+平滑接入真实认证与多用户。
 
 ## 配置与密钥
 
