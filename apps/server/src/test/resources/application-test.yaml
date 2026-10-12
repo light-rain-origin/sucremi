@@ -1,0 +1,10 @@
+# 测试专用配置：使用内存 H2（MySQL 兼容模式），关闭 Flyway，
+# 使后端测试无需本地 MySQL 即可运行。真实 MySQL 迁移验证通过启动应用完成。
+spring:
+  datasource:
+    url: jdbc:h2:mem:sucremi;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  flyway:
+    enabled: false
