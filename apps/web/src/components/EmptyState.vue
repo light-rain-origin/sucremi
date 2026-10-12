@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import AppIcon from './AppIcon.vue'
+
 withDefaults(defineProps<{ text?: string }>(), { text: '暂无数据' })
 </script>
 
 <template>
   <div class="empty-state">
-    <div class="empty-icon">🗂️</div>
+    <span class="empty-icon"><AppIcon name="inbox" :size="26" /></span>
     <p class="empty-text">{{ text }}</p>
     <slot />
   </div>
@@ -16,14 +18,23 @@ withDefaults(defineProps<{ text?: string }>(), { text: '暂无数据' })
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 48px 16px;
+  gap: 12px;
+  padding: 44px 16px;
   color: var(--sc-text-secondary);
 }
+
 .empty-icon {
-  font-size: 40px;
-  opacity: 0.7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--sc-gradient-soft);
+  border: 1px solid var(--sc-border-soft);
+  color: var(--sc-purple);
 }
+
 .empty-text {
   margin: 0;
 }

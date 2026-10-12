@@ -1,55 +1,151 @@
+/**
+ * 设计 Token 与全局主题。
+ *
+ * 唯一色值来源：页面 / 组件里不要再写死颜色，一律引用这里的变量。
+ * 分四段：① 品牌与语义 token ② 排版与布局 ③ Element Plus 变量覆盖 ④ 少量全局选择器。
+ * 尽量通过覆盖 Element Plus 的 CSS 变量来改主题，避免零散的页面级补丁与 !important。
+ */
+
 :root {
-  /* 品牌色 */
-  --sc-primary: #8a7cf7;
-  --sc-primary-hover: #9d90f9;
-  --sc-primary-active: #7566e8;
-  --sc-accent: #f7a8c4;
+  /* ---- 品牌色：樱花粉 + 淡紫 ---- */
+  --sc-pink: #f5a8cb;
+  --sc-pink-strong: #d95f92;
+  --sc-pink-soft: #ffe7f3;
+  --sc-purple: #9b86f8;
+  --sc-purple-strong: #6f56e0;
+  --sc-purple-soft: #ece5ff;
 
-  /* 背景 / 文字 / 边框 */
-  --sc-bg: #faf9fb;
-  --sc-bg-elevated: #ffffff;
-  --sc-bg-muted: #f4f2f8;
-  --sc-text: #2b2733;
-  --sc-text-secondary: #6b6676;
-  --sc-text-placeholder: #a8a3b5;
-  --sc-border: #e8e4f0;
+  /* 保留原 token 名（既有页面在引用），值改为新品牌色 */
+  --sc-primary: var(--sc-purple);
+  --sc-primary-hover: #a48ff9;
+  --sc-primary-active: var(--sc-purple-strong);
+  --sc-accent: var(--sc-pink);
 
-  /* 功能色 */
-  --sc-success: #5fb97e;
-  --sc-warning: #e6b45a;
-  --sc-error: #e87c86;
+  /* ---- 背景 / 文字 / 边框 ---- */
+  --sc-bg: #fff4fa;
+  --sc-bg-alt: #f6f1ff;
+  --sc-bg-elevated: #fffbfe;
+  /* 半透明面板：叠在页面渐变上产生「轻」的层次，不用 backdrop-filter */
+  --sc-panel: rgba(255, 252, 254, 0.76);
+  --sc-panel-strong: rgba(255, 253, 255, 0.92);
+  --sc-bg-muted: #f7f0f9;
+  --sc-text: #383044;
+  --sc-text-secondary: #8c8198;
+  --sc-text-placeholder: #b4aabf;
+  --sc-border: #f0e3f0;
+  --sc-border-soft: #f4e8f4;
+  --sc-border-strong: #e6d5e8;
 
-  /* 圆角 */
-  --sc-radius-sm: 6px;
-  --sc-radius-md: 10px;
-  --sc-radius-lg: 16px;
+  /* ---- 功能色（与粉紫同样走柔和路线）---- */
+  --sc-success: #5fb98b;
+  --sc-success-strong: #35886a;
+  --sc-warning: #e0a860;
+  --sc-warning-strong: #b0782c;
+  --sc-error: #ee7f8e;
+  --sc-error-strong: #cd5566;
 
-  /* 阴影 */
-  --sc-shadow-sm: 0 1px 2px rgba(43, 39, 51, 0.06);
-  --sc-shadow-md: 0 4px 16px rgba(138, 124, 247, 0.1);
+  /* ---- 渐变 ---- */
+  --sc-gradient-brand: linear-gradient(120deg, #f7a8cc 0%, #b79cf9 100%);
+  --sc-gradient-brand-hover: linear-gradient(120deg, #f9b6d6 0%, #c3adfa 100%);
+  --sc-gradient-brand-active: linear-gradient(120deg, #eb96c0 0%, #a385f3 100%);
+  --sc-gradient-soft: linear-gradient(120deg, #fff1f8 0%, #fbf2ff 52%, #f2ecff 100%);
+  --sc-gradient-page: linear-gradient(165deg, #fff6fb 0%, #fdf4fb 42%, #f6f0ff 100%);
 
-  /* 布局尺寸 */
-  --sc-sidebar-w: 220px;
-  --sc-topbar-h: 56px;
-  --sc-content-max: 1200px;
+  /* ---- 圆角 ---- */
+  --sc-radius-sm: 8px;
+  --sc-radius-md: 12px;
+  --sc-radius-lg: 18px;
+  --sc-radius-xl: 22px;
+  --sc-radius-pill: 999px;
+
+  /* ---- 阴影：统一带一点粉紫染色，避免灰黑阴影带来的「脏」感 ---- */
+  --sc-shadow-sm: 0 2px 8px rgba(155, 134, 248, 0.06);
+  --sc-shadow-md: 0 8px 22px rgba(178, 138, 200, 0.12);
+  --sc-shadow-lg: 0 16px 38px rgba(178, 138, 200, 0.18);
+  --sc-shadow-pink: 0 8px 20px rgba(245, 168, 203, 0.28);
+
+  /* ---- 布局尺寸 ---- */
+  --sc-font: 'PingFang SC', 'Microsoft YaHei', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --sc-sidebar-w: 232px;
+  --sc-topbar-h: 60px;
+  --sc-content-max: 1180px;
   --sc-space: 8px;
 
-  /* ---- Element Plus 主题覆盖 ---- */
-  --el-color-primary: var(--sc-primary);
-  --el-color-primary-light-3: #ada3f9;
-  --el-color-primary-light-5: #c4bdfb;
-  --el-color-primary-light-7: #dcd7fd;
-  --el-color-primary-light-8: #e8e4fe;
-  --el-color-primary-light-9: #f3f1fe;
-  --el-color-primary-dark-2: #7566e8;
+  /* ================= Element Plus 变量覆盖 ================= */
+  /* 主色：紫（按钮主视觉走粉紫渐变，见下方选择器） */
+  --el-color-primary: var(--sc-purple);
+  --el-color-primary-light-3: #b9aafa;
+  --el-color-primary-light-5: #cdc2fb;
+  --el-color-primary-light-7: #e1dbfd;
+  --el-color-primary-light-8: #ebe7fe;
+  --el-color-primary-light-9: #f5f3fe;
+  --el-color-primary-dark-2: #7c6bc6;
+
   --el-color-success: var(--sc-success);
+  --el-color-success-light-3: #8fceae;
+  --el-color-success-light-8: #dff1e8;
+  --el-color-success-light-9: #eff8f3;
   --el-color-warning: var(--sc-warning);
+  --el-color-warning-light-3: #e9c290;
+  --el-color-warning-light-8: #f9eedf;
+  --el-color-warning-light-9: #fcf6ef;
   --el-color-danger: var(--sc-error);
-  --el-border-radius-base: 10px;
+  --el-color-danger-light-3: #f3a5b0;
+  --el-color-danger-light-8: #fce5e8;
+  --el-color-danger-light-9: #fdf2f4;
+  --el-color-error: var(--sc-error);
+  --el-color-info: #9d94ab;
+  --el-color-info-light-8: #eeeaf2;
+  --el-color-info-light-9: #f5f2f8;
+
+  /* 文字 / 边框 / 填充 / 背景 */
+  --el-font-family: var(--sc-font);
+  --el-font-size-base: 14px;
   --el-text-color-primary: var(--sc-text);
   --el-text-color-regular: var(--sc-text-secondary);
+  --el-text-color-secondary: var(--sc-text-secondary);
+  --el-text-color-placeholder: var(--sc-text-placeholder);
   --el-border-color: var(--sc-border);
+  --el-border-color-light: var(--sc-border-soft);
+  --el-border-color-lighter: var(--sc-border-soft);
+  --el-border-color-extra-light: var(--sc-border-soft);
+  --el-border-color-hover: var(--sc-border-strong);
   --el-bg-color: var(--sc-bg-elevated);
+  --el-bg-color-overlay: var(--sc-bg-elevated);
+  --el-bg-color-page: var(--sc-bg);
+  --el-fill-color-blank: #fffdfe;
+  --el-fill-color-light: var(--sc-bg-muted);
+  --el-fill-color-lighter: #faf5fb;
+
+  /* 圆角 */
+  --el-border-radius-base: var(--sc-radius-md);
+  --el-border-radius-small: var(--sc-radius-sm);
+  --el-border-radius-round: var(--sc-radius-pill);
+
+  /* 阴影 / 遮罩 */
+  --el-box-shadow: var(--sc-shadow-md);
+  --el-box-shadow-light: var(--sc-shadow-sm);
+  --el-box-shadow-lighter: var(--sc-shadow-sm);
+  --el-mask-color: rgba(78, 60, 86, 0.32);
+  --el-overlay-color-lighter: rgba(78, 60, 86, 0.32);
+
+  /* 组件级 */
+  --el-card-border-color: var(--sc-border-soft);
+  --el-card-border-radius: var(--sc-radius-xl);
+  --el-card-padding: 20px;
+  --el-dialog-border-radius: var(--sc-radius-xl);
+  --el-dialog-padding-primary: 22px;
+  --el-input-border-color: var(--sc-border);
+  --el-input-hover-border-color: var(--sc-pink);
+  --el-input-focus-border-color: var(--sc-pink);
+  --el-input-bg-color: #fffdfe;
+  --el-input-border-radius: var(--sc-radius-md);
+  --el-input-placeholder-color: var(--sc-text-placeholder);
+  --el-select-border-color-hover: var(--sc-pink);
+  --el-tag-border-radius: var(--sc-radius-pill);
+  --el-slider-height: 6px;
+  --el-slider-button-size: 16px;
+  --el-progress-bg-color: #f7ecf6;
 }
 
 * {
@@ -66,7 +162,7 @@ body {
   margin: 0;
   background: var(--sc-bg);
   color: var(--sc-text);
-  font-family: "PingFang SC", "Microsoft YaHei", -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--sc-font);
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -75,4 +171,118 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: 0.01em;
+}
+
+/* 细滚动条：默认的宽灰条在这个浅色主题里很突兀 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sc-border-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sc-border-strong);
+  border-radius: var(--sc-radius-pill);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ================= 全局组件微调（主题层，不做页面级补丁） ================= */
+
+/* 主按钮：粉紫渐变 + 柔和投影；悬停/按下只做轻微位移与色相变化 */
+.el-button--primary {
+  background-image: var(--sc-gradient-brand);
+  border-color: transparent;
+  box-shadow: var(--sc-shadow-pink);
+  transition:
+    background-image 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.el-button--primary:hover,
+.el-button--primary:focus-visible {
+  background-image: var(--sc-gradient-brand-hover);
+  border-color: transparent;
+  box-shadow: 0 10px 24px rgba(245, 168, 203, 0.36);
+}
+
+.el-button--primary:active {
+  background-image: var(--sc-gradient-brand-active);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(199, 150, 210, 0.3);
+  transform: translateY(1px);
+}
+
+.el-button--primary.is-disabled,
+.el-button--primary.is-disabled:hover {
+  background-image: none;
+  background-color: var(--el-color-primary-light-5);
+  box-shadow: none;
+  transform: none;
+}
+
+/* 次按钮：白底 + 粉边，悬停染粉 */
+.el-button--default:not(.is-text):not(.is-link) {
+  background-color: var(--sc-panel-strong);
+  border-color: var(--sc-border-strong);
+  color: var(--sc-text);
+}
+
+.el-button--default:not(.is-text):not(.is-link):hover {
+  background-color: var(--sc-pink-soft);
+  border-color: var(--sc-pink);
+  color: var(--sc-pink-strong);
+}
+
+.el-button {
+  font-weight: 500;
+}
+
+/* 表单控件获得焦点时的粉色柔光，替代默认的紫色细线 */
+.el-input__wrapper.is-focus,
+.el-textarea__inner:focus {
+  box-shadow:
+    0 0 0 1px var(--sc-pink) inset,
+    0 0 0 4px rgba(245, 168, 203, 0.16);
+}
+
+/* 卡片：面板改用半透明暖白，叠在页面渐变上；阴影统一走品牌色 */
+.el-card {
+  background: var(--sc-panel);
+  backdrop-filter: none;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.el-card.is-never-shadow,
+.el-card.is-always-shadow {
+  box-shadow: var(--sc-shadow-md);
+}
+
+.el-card__header {
+  padding: 16px 20px;
+  font-weight: 600;
+}
+
+/* 按钮内嵌图标与文字的间距（图标是 AppIcon，不是 el-icon） */
+.el-button .sc-icon {
+  margin-right: 6px;
+}
+
+.el-empty__description {
+  color: var(--sc-text-secondary);
 }

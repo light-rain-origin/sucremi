@@ -59,7 +59,7 @@ async function onSubmit() {
   <el-dialog
     :model-value="modelValue"
     :title="mode === 'create' ? '新建项目' : '编辑项目'"
-    width="520px"
+    width="min(520px, 92vw)"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
