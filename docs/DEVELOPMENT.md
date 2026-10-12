@@ -29,11 +29,18 @@ cd apps/web && npm install
 
 ```bash
 # 后端（首次启动时 Flyway 自动迁移）
-cd apps/server && ./mvnw spring-boot:run      # Windows: .\mvnw.cmd spring-boot:run
+# 需要：① 数据库密码(环境变量 SUCREMI_DB_PASSWORD) ② local profile(启用开发期固定身份)
+cd apps/server
+SUCREMI_DB_PASSWORD=你的本地密码 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+# 或在 IDE 运行配置里设置：环境变量 SUCREMI_DB_PASSWORD，Active profiles = local
 
 # 前端
 cd apps/web && npm run dev
 ```
+
+> 未加 `local` profile 时，后端仍可启动、健康检查正常，但需要用户身份的业务接口会返回
+> 401（失败关闭设计，防止无认证状态被误用于公开部署，详见
+> docs/decisions/0001-identity-and-data-ownership.md）。
 
 - 后端：`http://localhost:8080`，健康检查 `GET /api/v1/health`
 - 前端：`http://localhost:5173`，`/api/*` 经 Vite 代理转发到后端
