@@ -11,6 +11,7 @@
   "code": 0,
   "message": "OK",
   "data": { },
+  "requestId": "f1e2d3c4-....",
   "timestamp": 1760000000000
 }
 ```
@@ -20,7 +21,11 @@
 | code | 业务状态码，`0` 为成功，非 0 为业务/系统错误 |
 | message | 可读提示信息 |
 | data | 业务数据，错误时为 `null` |
+| requestId | 本次请求的追踪 ID，与响应头 `X-Request-Id` 一致，便于日志关联 |
 | timestamp | 服务端生成响应的毫秒时间戳 |
+
+> `requestId` 由后端 `RequestIdFilter` 为每个请求生成（或沿用调用方传入的 `X-Request-Id`），
+> 同时写入响应头 `X-Request-Id` 与日志 MDC（`%X{requestId}`）。
 
 ## 错误码约定
 
@@ -50,6 +55,7 @@
     "app": "sucremi-server",
     "time": "2026-10-11T13:38:34.842Z"
   },
+  "requestId": "f1e2d3c4-....",
   "timestamp": 1760160000000
 }
 ```
