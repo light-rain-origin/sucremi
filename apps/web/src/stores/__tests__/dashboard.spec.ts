@@ -4,7 +4,7 @@ import { useDashboardStore } from '../dashboard'
 import type { DashboardSummary } from '@/types/dashboard'
 
 vi.mock('@/api/dashboard', () => ({
-  getDashboardSummary: vi.fn(),
+  getDashboardSummary: vi.fn<typeof import('@/api/dashboard').getDashboardSummary>(),
 }))
 
 import { getDashboardSummary } from '@/api/dashboard'
