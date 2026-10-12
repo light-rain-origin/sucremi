@@ -19,6 +19,7 @@ export type IconName =
   | 'menu'
   | 'inbox'
   | 'sparkle'
+  | 'droplet'
 
 /** 每个图标由若干条 path 的 `d` 组成，按顺序绘制。 */
 export const ICON_PATHS: Record<IconName, string[]> = {
@@ -43,4 +44,5 @@ export const ICON_PATHS: Record<IconName, string[]> = {
     'M11.4 3.8l1.8 4.9 4.9 1.8-4.9 1.8-1.8 4.9-1.8-4.9L4.7 10.5l4.9-1.8z',
     'M18.4 15.2l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7z',
   ],
+  droplet: ['M12 3.6c3.4 4 5.1 6.7 5.1 9a5.1 5.1 0 0 1-10.2 0c0-2.3 1.7-5 5.1-9z'],
 }

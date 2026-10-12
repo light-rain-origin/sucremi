@@ -8,6 +8,7 @@ import type { DashboardSummary } from '@/types/dashboard'
 
 vi.mock('@/api/dashboard', () => ({
   getDashboardSummary: vi.fn<typeof import('@/api/dashboard').getDashboardSummary>(),
+  getProjectFlow: vi.fn<typeof import('@/api/dashboard').getProjectFlow>(),
 }))
 vi.mock('@/api/project', () => ({
   listProjects: vi.fn<typeof import('@/api/project').listProjects>(),
@@ -16,9 +17,10 @@ vi.mock('@/api/project', () => ({
   unarchiveProject: vi.fn<typeof import('@/api/project').unarchiveProject>(),
 }))
 
-import { getDashboardSummary } from '@/api/dashboard'
+import { getDashboardSummary, getProjectFlow } from '@/api/dashboard'
 
 const mocked = vi.mocked(getDashboardSummary)
+const mockedProjectFlow = vi.mocked(getProjectFlow)
 
 function render() {
   const router = createRouter({
@@ -57,6 +59,19 @@ describe('DashboardView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mocked.mockReset()
+    mockedProjectFlow.mockReset()
+    mockedProjectFlow.mockResolvedValue({
+      code: 0,
+      message: 'OK',
+      data: {
+        unfinishedCount: 2,
+        ongoingCount: 2,
+        completedCount: 0,
+        projects: summary.recentProjects,
+      },
+      requestId: 'flow',
+      timestamp: 1,
+    })
   })
 
   it('renders the five stat cards with backend counts', async () => {
@@ -71,6 +86,8 @@ describe('DashboardView', () => {
     expect(text).toContain('4')
     expect(text).toContain('3')
     expect(text).toContain('最近项目')
+    expect(text).toContain('项目状态与整体进度')
+    expect(text).toContain('20%')
   })
 
   it('shows the empty state with a create entry when there is no project', async () => {

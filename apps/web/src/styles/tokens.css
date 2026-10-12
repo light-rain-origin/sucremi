@@ -1,13 +1,21 @@
 /**
- * 设计 Token 与全局主题。
+ * 设计 Token 与全局主题 —— 契约层。
  *
- * 唯一色值来源：页面 / 组件里不要再写死颜色，一律引用这里的变量。
- * 分四段：① 品牌与语义 token ② 排版与布局 ③ Element Plus 变量覆盖 ④ 少量全局选择器。
- * 尽量通过覆盖 Element Plus 的 CSS 变量来改主题，避免零散的页面级补丁与 !important。
+ * 分三段，皮肤切换只动第 ② 段：
+ *   ① 调色板 palette —— 具名色（--sc-pink / --sc-purple / …），只有皮肤自己该引用
+ *   ② 角色 role      —— 语义槽位（--sc-brand / --sc-bg / --sc-text / …），组件与全局规则只引用这一层
+ *   ③ Element Plus   —— 覆盖 EP 的 CSS 变量，必要时也被皮肤覆盖
+ *
+ * `:root` 这一段同时就是默认皮肤 Classic 的值：不设 `data-skin` 属性时外观与历史版本完全一致。
+ * 因此没有 `[data-skin='classic']` 的专用样式块 —— Classic 就是这份默认值本身，
+ * 同一份色板维护两处只会带来漂移。非默认皮肤见 `styles/skins/`，各自只覆盖角色值。
+ *
+ * 组件里不要再写死颜色 / 字号 / 圆角，一律引用角色 token —— 这是皮肤能生效的前提。
+ * Element Plus 尽量通过它的 CSS 变量改，避免零散的页面级补丁与 !important。
  */
 
 :root {
-  /* ---- 品牌色：樱花粉 + 淡紫 ---- */
+  /* ==================== ① 调色板：Classic = 樱花粉 + 淡紫 ==================== */
   --sc-pink: #f5a8cb;
   --sc-pink-strong: #d95f92;
   --sc-pink-soft: #ffe7f3;
@@ -15,28 +23,40 @@
   --sc-purple-strong: #6f56e0;
   --sc-purple-soft: #ece5ff;
 
-  /* 保留原 token 名（既有页面在引用），值改为新品牌色 */
-  --sc-primary: var(--sc-purple);
-  --sc-primary-hover: #a48ff9;
-  --sc-primary-active: var(--sc-purple-strong);
-  --sc-accent: var(--sc-pink);
+  /* ==================== ② 角色：品牌 ==================== */
+  /* 主强调色（暖）与次强调色（冷）。换肤就是换它们指向的调色板色。 */
+  --sc-brand: var(--sc-pink);
+  --sc-brand-strong: var(--sc-pink-strong);
+  --sc-brand-soft: var(--sc-pink-soft);
+  --sc-brand-alt: var(--sc-purple);
+  --sc-brand-alt-strong: var(--sc-purple-strong);
+  --sc-brand-alt-soft: var(--sc-purple-soft);
+  /* 品牌标记（侧栏瓷贴）自身的三个值：不变的部分写进 SVG，可变的部分走变量 */
+  --sc-brand-tile-from: #f7a8cc;
+  --sc-brand-tile-to: #9b86f8;
+  --sc-brand-on: #fff;
+  --sc-brand-glow: drop-shadow(0 4px 10px rgba(199, 150, 210, 0.35));
 
-  /* ---- 背景 / 文字 / 边框 ---- */
+  /* ==================== ② 角色：背景 / 文字 / 边框 ==================== */
   --sc-bg: #fff4fa;
-  --sc-bg-alt: #f6f1ff;
   --sc-bg-elevated: #fffbfe;
-  /* 半透明面板：叠在页面渐变上产生「轻」的层次，不用 backdrop-filter */
+  /* 半透明面板：叠在页面氛围上产生「轻」的层次，不用 backdrop-filter */
   --sc-panel: rgba(255, 252, 254, 0.76);
   --sc-panel-strong: rgba(255, 253, 255, 0.92);
+  /* 占位 / 未实现区域用的更淡面板 */
+  --sc-panel-faint: rgba(255, 252, 254, 0.55);
   --sc-bg-muted: #f7f0f9;
+  --sc-sidebar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, var(--sc-panel) 100%);
   --sc-text: #383044;
   --sc-text-secondary: #8c8198;
   --sc-text-placeholder: #b4aabf;
   --sc-border: #f0e3f0;
   --sc-border-soft: #f4e8f4;
   --sc-border-strong: #e6d5e8;
+  /* 移动端侧栏遮罩 / 弹窗遮罩共用 */
+  --sc-overlay: rgba(78, 60, 86, 0.32);
 
-  /* ---- 功能色（与粉紫同样走柔和路线）---- */
+  /* ==================== ② 角色：功能色 ==================== */
   --sc-success: #5fb98b;
   --sc-success-strong: #35886a;
   --sc-warning: #e0a860;
@@ -44,35 +64,92 @@
   --sc-error: #ee7f8e;
   --sc-error-strong: #cd5566;
 
-  /* ---- 渐变 ---- */
+  /* ==================== ② 角色：渐变与氛围 ==================== */
   --sc-gradient-brand: linear-gradient(120deg, #f7a8cc 0%, #b79cf9 100%);
   --sc-gradient-brand-hover: linear-gradient(120deg, #f9b6d6 0%, #c3adfa 100%);
   --sc-gradient-brand-active: linear-gradient(120deg, #eb96c0 0%, #a385f3 100%);
   --sc-gradient-soft: linear-gradient(120deg, #fff1f8 0%, #fbf2ff 52%, #f2ecff 100%);
   --sc-gradient-page: linear-gradient(165deg, #fff6fb 0%, #fdf4fb 42%, #f6f0ff 100%);
+  /* 侧栏选中项底色 */
+  --sc-nav-active-bg: linear-gradient(100deg, var(--sc-pink-soft) 0%, var(--sc-purple-soft) 100%);
+  /* 欢迎面板右上角的柔光 */
+  --sc-hero-glow: radial-gradient(circle, rgba(245, 168, 203, 0.42), transparent 68%);
+  /*
+   * 页面氛围：整条 `background` 简写的值（含每层的尺寸与平铺方式），
+   * 皮肤可以换成任意多层叠加，AppLayout 只负责 `background: var(--sc-backdrop)`。
+   */
+  --sc-backdrop:
+    radial-gradient(1100px 520px at 4% -10%, rgba(245, 168, 203, 0.32), transparent 62%),
+    radial-gradient(900px 500px at 100% 2%, rgba(155, 134, 248, 0.22), transparent 60%),
+    var(--sc-gradient-page);
+  /*
+   * 角色插画装饰位（默认关闭）。
+   * 素材到位后由皮肤同时给出 --sc-character-image 与 --sc-character-height 才会显示；
+   * 高度为 0 时元素不占位，因此默认关闭不会在任何布局里留下空洞。
+   */
+  --sc-character-image: none;
+  --sc-character-height: 0px;
 
-  /* ---- 圆角 ---- */
+  /*
+   * 皮肤切换器里的色板预览：它必须显示「另一套皮肤」的颜色，
+   * 因此不能引用当前皮肤的品牌 token（那样两块色板会一样），只能在这里写死。
+   * 新增皮肤时同步加一条。
+   */
+  --sc-swatch-classic: linear-gradient(120deg, #f7a8cc 0%, #b79cf9 100%);
+  --sc-swatch-remi-macaron: linear-gradient(120deg, #7ecb9c 0%, #5fbfa8 100%);
+  /* 色板预览描边：中性发丝线，对两套皮肤都成立，因此不随皮肤变化 */
+  --sc-swatch-ring: rgba(0, 0, 0, 0.06);
+
+  /* ==================== ② 角色：统计卡色调 ==================== */
+  --sc-stat-purple-soft: rgba(155, 134, 248, 0.14);
+  --sc-stat-purple-strong: var(--sc-purple-strong);
+  --sc-stat-pink-soft: rgba(245, 168, 203, 0.2);
+  --sc-stat-pink-strong: var(--sc-pink-strong);
+  --sc-stat-amber-soft: rgba(224, 168, 96, 0.18);
+  --sc-stat-amber-strong: var(--sc-warning-strong);
+  --sc-stat-mint-soft: rgba(95, 185, 139, 0.16);
+  --sc-stat-mint-strong: var(--sc-success-strong);
+  --sc-stat-slate-soft: rgba(140, 129, 152, 0.14);
+  --sc-stat-slate-strong: #6b6277;
+
+  /* ==================== ② 角色：圆角 ==================== */
   --sc-radius-sm: 8px;
   --sc-radius-md: 12px;
   --sc-radius-lg: 18px;
   --sc-radius-xl: 22px;
   --sc-radius-pill: 999px;
 
-  /* ---- 阴影：统一带一点粉紫染色，避免灰黑阴影带来的「脏」感 ---- */
+  /* ==================== ② 角色：阴影 ==================== */
+  /* 统一带一点品牌染色，避免灰黑阴影带来的「脏」感 */
   --sc-shadow-sm: 0 2px 8px rgba(155, 134, 248, 0.06);
   --sc-shadow-md: 0 8px 22px rgba(178, 138, 200, 0.12);
   --sc-shadow-lg: 0 16px 38px rgba(178, 138, 200, 0.18);
-  --sc-shadow-pink: 0 8px 20px rgba(245, 168, 203, 0.28);
+  /* 主按钮的三档投影 + 表单聚焦光圈，都随品牌色变化 */
+  --sc-shadow-brand: 0 8px 20px rgba(245, 168, 203, 0.28);
+  --sc-shadow-brand-hover: 0 10px 24px rgba(245, 168, 203, 0.36);
+  --sc-shadow-brand-active: 0 4px 12px rgba(199, 150, 210, 0.3);
+  --sc-focus-ring: 0 0 0 4px rgba(245, 168, 203, 0.16);
 
-  /* ---- 布局尺寸 ---- */
+  /* ==================== ② 角色：排版与布局 ==================== */
   --sc-font: 'PingFang SC', 'Microsoft YaHei', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* 字号阶梯：组件按层级取用，皮肤可整体收紧或放松 */
+  --sc-font-size-xs: 11px;
+  --sc-font-size-sm: 12px;
+  --sc-font-size-md: 13px;
+  --sc-font-size-lg: 14px;
+  --sc-font-size-xl: 16px;
+  --sc-font-size-2xl: 17px;
+  --sc-font-size-3xl: 21px;
+  --sc-font-size-4xl: 22px;
+  --sc-font-size-5xl: 26px;
   --sc-sidebar-w: 232px;
   --sc-topbar-h: 60px;
   --sc-content-max: 1180px;
+  --sc-content-pad: 28px;
   --sc-space: 8px;
 
-  /* ================= Element Plus 变量覆盖 ================= */
-  /* 主色：紫（按钮主视觉走粉紫渐变，见下方选择器） */
+  /* ==================== ③ Element Plus 变量覆盖 ==================== */
+  /* 主色取冷色那一支；按钮主视觉另走粉紫渐变，见下方选择器 */
   --el-color-primary: var(--sc-purple);
   --el-color-primary-light-3: #b9aafa;
   --el-color-primary-light-5: #cdc2fb;
@@ -100,7 +177,7 @@
 
   /* 文字 / 边框 / 填充 / 背景 */
   --el-font-family: var(--sc-font);
-  --el-font-size-base: 14px;
+  --el-font-size-base: var(--sc-font-size-lg);
   --el-text-color-primary: var(--sc-text);
   --el-text-color-regular: var(--sc-text-secondary);
   --el-text-color-secondary: var(--sc-text-secondary);
@@ -126,8 +203,8 @@
   --el-box-shadow: var(--sc-shadow-md);
   --el-box-shadow-light: var(--sc-shadow-sm);
   --el-box-shadow-lighter: var(--sc-shadow-sm);
-  --el-mask-color: rgba(78, 60, 86, 0.32);
-  --el-overlay-color-lighter: rgba(78, 60, 86, 0.32);
+  --el-mask-color: var(--sc-overlay);
+  --el-overlay-color-lighter: var(--sc-overlay);
 
   /* 组件级 */
   --el-card-border-color: var(--sc-border-soft);
@@ -136,12 +213,12 @@
   --el-dialog-border-radius: var(--sc-radius-xl);
   --el-dialog-padding-primary: 22px;
   --el-input-border-color: var(--sc-border);
-  --el-input-hover-border-color: var(--sc-pink);
-  --el-input-focus-border-color: var(--sc-pink);
+  --el-input-hover-border-color: var(--sc-brand);
+  --el-input-focus-border-color: var(--sc-brand);
   --el-input-bg-color: #fffdfe;
   --el-input-border-radius: var(--sc-radius-md);
   --el-input-placeholder-color: var(--sc-text-placeholder);
-  --el-select-border-color-hover: var(--sc-pink);
+  --el-select-border-color-hover: var(--sc-brand);
   --el-tag-border-radius: var(--sc-radius-pill);
   --el-slider-height: 6px;
   --el-slider-button-size: 16px;
@@ -163,7 +240,7 @@ body {
   background: var(--sc-bg);
   color: var(--sc-text);
   font-family: var(--sc-font);
-  font-size: 14px;
+  font-size: var(--sc-font-size-lg);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -199,13 +276,14 @@ h3 {
   background: transparent;
 }
 
-/* ================= 全局组件微调（主题层，不做页面级补丁） ================= */
+/* ==================== 全局组件微调（主题层，不做页面级补丁） ==================== */
+/* 这里的值一律来自角色 token，皮肤只需覆盖变量即可，无需重写选择器。 */
 
-/* 主按钮：粉紫渐变 + 柔和投影；悬停/按下只做轻微位移与色相变化 */
+/* 主按钮：品牌渐变 + 柔和投影；悬停/按下只做轻微位移与色相变化 */
 .el-button--primary {
   background-image: var(--sc-gradient-brand);
   border-color: transparent;
-  box-shadow: var(--sc-shadow-pink);
+  box-shadow: var(--sc-shadow-brand);
   transition:
     background-image 0.18s ease,
     box-shadow 0.18s ease,
@@ -216,13 +294,13 @@ h3 {
 .el-button--primary:focus-visible {
   background-image: var(--sc-gradient-brand-hover);
   border-color: transparent;
-  box-shadow: 0 10px 24px rgba(245, 168, 203, 0.36);
+  box-shadow: var(--sc-shadow-brand-hover);
 }
 
 .el-button--primary:active {
   background-image: var(--sc-gradient-brand-active);
   border-color: transparent;
-  box-shadow: 0 4px 12px rgba(199, 150, 210, 0.3);
+  box-shadow: var(--sc-shadow-brand-active);
   transform: translateY(1px);
 }
 
@@ -234,7 +312,7 @@ h3 {
   transform: none;
 }
 
-/* 次按钮：白底 + 粉边，悬停染粉 */
+/* 次按钮：面板底 + 品牌描边，悬停染品牌色 */
 .el-button--default:not(.is-text):not(.is-link) {
   background-color: var(--sc-panel-strong);
   border-color: var(--sc-border-strong);
@@ -242,24 +320,24 @@ h3 {
 }
 
 .el-button--default:not(.is-text):not(.is-link):hover {
-  background-color: var(--sc-pink-soft);
-  border-color: var(--sc-pink);
-  color: var(--sc-pink-strong);
+  background-color: var(--sc-brand-soft);
+  border-color: var(--sc-brand);
+  color: var(--sc-brand-strong);
 }
 
 .el-button {
   font-weight: 500;
 }
 
-/* 表单控件获得焦点时的粉色柔光，替代默认的紫色细线 */
+/* 表单控件获得焦点时的品牌柔光，替代默认的细线 */
 .el-input__wrapper.is-focus,
 .el-textarea__inner:focus {
   box-shadow:
-    0 0 0 1px var(--sc-pink) inset,
-    0 0 0 4px rgba(245, 168, 203, 0.16);
+    0 0 0 1px var(--sc-brand) inset,
+    var(--sc-focus-ring);
 }
 
-/* 卡片：面板改用半透明暖白，叠在页面渐变上；阴影统一走品牌色 */
+/* 卡片：面板改用半透明色，叠在页面氛围上；阴影统一走品牌色 */
 .el-card {
   background: var(--sc-panel);
   backdrop-filter: none;

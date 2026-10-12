@@ -12,3 +12,11 @@ export interface DashboardSummary {
   archivedProjects: number
   recentProjects: Project[]
 }
+
+/** 项目流程卡片数据：仅包括当前用户未归档项目。 */
+export interface ProjectFlowSummary {
+  unfinishedCount: number
+  ongoingCount: number
+  completedCount: number
+  projects: Project[]
+}
