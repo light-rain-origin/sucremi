@@ -10,7 +10,23 @@ export interface ApiResponse<T> {
   timestamp: number
 }
 
-export async function apiGet<T>(path: string): Promise<ApiResponse<T>> {
-  const res = await fetch(path, { headers: { Accept: 'application/json' } })
+async function request<T>(path: string, init: RequestInit): Promise<ApiResponse<T>> {
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  if (init.body != null) {
+    headers['Content-Type'] = 'application/json'
+  }
+  const res = await fetch(path, { headers, ...init })
   return (await res.json()) as ApiResponse<T>
+}
+
+export function apiGet<T>(path: string): Promise<ApiResponse<T>> {
+  return request<T>(path, { method: 'GET' })
+}
+
+export function apiPost<T>(path: string, body?: unknown): Promise<ApiResponse<T>> {
+  return request<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) })
+}
+
+export function apiPut<T>(path: string, body?: unknown): Promise<ApiResponse<T>> {
+  return request<T>(path, { method: 'PUT', body: body === undefined ? undefined : JSON.stringify(body) })
 }
