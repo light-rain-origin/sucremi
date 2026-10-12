@@ -22,4 +22,9 @@ public class DashboardController {
     public ApiResponse<DashboardSummary> summary() {
         return ApiResponse.ok(dashboardService.summary());
     }
+
+    @GetMapping("/project-flow")
+    public ApiResponse<ProjectFlowSummary> projectFlow() {
+        return ApiResponse.ok(dashboardService.projectFlow());
+    }
 }

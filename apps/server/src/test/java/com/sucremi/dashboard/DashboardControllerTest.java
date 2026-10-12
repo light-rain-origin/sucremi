@@ -55,4 +55,21 @@ class DashboardControllerTest {
                 .andExpect(jsonPath("$.data.recentProjects").isArray())
                 .andExpect(jsonPath("$.data.recentProjects").isEmpty());
     }
+
+    @Test
+    void projectFlowReturnsStatusCountsAndProjects() throws Exception {
+        ProjectResponse project = new ProjectResponse(12L, "流程卡片项目", null, null,
+                "ACTIVE", 68, false, null, null);
+        when(dashboardService.projectFlow())
+                .thenReturn(new ProjectFlowSummary(2, 1, 1, List.of(project)));
+
+        mockMvc.perform(get("/api/v1/dashboard/project-flow"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.unfinishedCount").value(2))
+                .andExpect(jsonPath("$.data.ongoingCount").value(1))
+                .andExpect(jsonPath("$.data.completedCount").value(1))
+                .andExpect(jsonPath("$.data.projects[0].id").value(12))
+                .andExpect(jsonPath("$.data.projects[0].progress").value(68));
+    }
 }

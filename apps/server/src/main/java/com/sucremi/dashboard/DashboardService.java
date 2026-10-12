@@ -6,4 +6,6 @@ package com.sucremi.dashboard;
 public interface DashboardService {
 
     DashboardSummary summary();
+
+    ProjectFlowSummary projectFlow();
 }

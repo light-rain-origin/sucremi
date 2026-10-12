@@ -53,6 +53,31 @@ public class DashboardServiceImpl implements DashboardService {
         return new DashboardSummary(total, active, paused, done, archived, recent);
     }
 
+    @Override
+    public ProjectFlowSummary projectFlow() {
+        List<Project> projects = projectMapper.selectList(Wrappers.<Project>lambdaQuery()
+                .eq(Project::getUserId, currentUser.currentUserId())
+                .isNull(Project::getArchivedAt)
+                .orderByDesc(Project::getUpdatedAt));
+
+        long ongoing = projects.stream()
+                .filter(project -> ProjectStatus.ACTIVE.name().equals(project.getStatus()))
+                .count();
+        long completed = projects.stream()
+                .filter(project -> ProjectStatus.DONE.name().equals(project.getStatus()))
+                .count();
+        long unfinished = projects.size() - completed;
+
+        List<ProjectResponse> responses = projects.stream()
+                .map(project -> new ProjectResponse(
+                        project.getId(), project.getName(), project.getSummary(), project.getGoal(),
+                        project.getStatus(), project.getProgress(), false,
+                        project.getCreatedAt(), project.getUpdatedAt()))
+                .toList();
+
+        return new ProjectFlowSummary(unfinished, ongoing, completed, responses);
+    }
+
     private long count(long uid, Consumer<LambdaQueryWrapper<Project>> extra) {
         LambdaQueryWrapper<Project> w = Wrappers.<Project>lambdaQuery().eq(Project::getUserId, uid);
         extra.accept(w);
