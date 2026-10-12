@@ -37,6 +37,12 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(40000, message.isEmpty() ? "参数校验失败" : message));
     }
 
+    @ExceptionHandler(UnauthenticatedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnauthenticated(UnauthenticatedException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(40100, ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception ex) {
         // 内部细节只记录在服务端，响应里不暴露堆栈或敏感信息
