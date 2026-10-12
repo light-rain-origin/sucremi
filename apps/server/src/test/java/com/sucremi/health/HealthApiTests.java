@@ -8,6 +8,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -26,7 +27,9 @@ class HealthApiTests {
     void healthReturnsUp() throws Exception {
         mockMvc.perform(get("/api/v1/health"))
                 .andExpect(status().isOk())
+                .andExpect(header().exists("X-Request-Id"))
                 .andExpect(jsonPath("$.code").value(0))
-                .andExpect(jsonPath("$.data.status").value("UP"));
+                .andExpect(jsonPath("$.data.status").value("UP"))
+                .andExpect(jsonPath("$.requestId").isNotEmpty());
     }
 }
