@@ -1,0 +1,228 @@
+/**
+ * 皮肤：Remi Macaron（马卡龙 · 紧凑）。
+ *
+ * 只做两件事：
+ *   ① 覆盖角色 token —— 颜色 / 圆角 / 阴影 / 字号 / 布局尺寸，组件样式本身一行不改；
+ *   ② 少量「结构适配」规则 —— 密度与排布这类无法只靠变量表达的差异，集中放在文件末尾。
+ *
+ * 与 Classic（`tokens.css` 的 `:root` 默认值）的差异刻意做在四个维度上，
+ * 而不是「再粉一点」，否则两套皮肤看起来只是同一个人换了件近似色的衣服：
+ *   色相  粉主色         → 抹茶绿主色（蓝莓紫 / 草莓粉退为辅助色）
+ *   密度  宽松           → 紧凑（内容更宽、留白更小、卡片更矮）
+ *   形状  大圆角 + 染色阴影 → 小圆角 + 中性扁平阴影
+ *   氛围  粉紫柔光       → 马卡龙圆点纸屑
+ *
+ * 由 `stores/skin.ts` 在用户选中时动态 import，未选中的用户不会下载这个文件。
+ * 文件内不写 !important：结构适配用 `html[data-skin=…]` 提升一级特异性即可稳定覆盖
+ * 组件的 scoped 规则（`html[data-skin=…] .x` 的权重为 (0,2,1)，高于 `.x[data-v-…]` 的 (0,2,0)）。
+ */
+
+html[data-skin='remi-macaron'] {
+  /* ==================== 调色板：马卡龙五色 ==================== */
+  --sc-matcha: #4f9d6f;
+  --sc-matcha-strong: #35805a;
+  --sc-matcha-soft: #e7f4ea;
+  --sc-berry: #ef9fbb;
+  --sc-berry-strong: #cf5f8b;
+  --sc-berry-soft: #fdeaf1;
+  --sc-blueberry: #9f92dd;
+  --sc-blueberry-strong: #6f5fc4;
+  --sc-blueberry-soft: #efecfb;
+  --sc-mint: #5fb3a3;
+  --sc-mint-strong: #35816f;
+  --sc-mint-soft: #e3f4f0;
+  --sc-lemon: #e8b45f;
+  --sc-lemon-strong: #a9762a;
+  --sc-lemon-soft: #fdf1dc;
+  /* 奶油底色：Classic 的粉底换成暖白，避免绿色主色压不住粉背景 */
+  --sc-cream: #fbfaf7;
+
+  /* ==================== 角色：品牌 ==================== */
+  --sc-brand: var(--sc-matcha);
+  --sc-brand-strong: var(--sc-matcha-strong);
+  --sc-brand-soft: var(--sc-matcha-soft);
+  --sc-brand-alt: var(--sc-blueberry);
+  --sc-brand-alt-strong: var(--sc-blueberry-strong);
+  --sc-brand-alt-soft: var(--sc-blueberry-soft);
+  --sc-brand-tile-from: #86d3a3;
+  --sc-brand-tile-to: #5fbfa8;
+  --sc-brand-on: #fff;
+  --sc-brand-glow: drop-shadow(0 4px 10px rgba(79, 157, 111, 0.32));
+
+  /* ==================== 角色：背景 / 文字 / 边框 ==================== */
+  --sc-bg: var(--sc-cream);
+  --sc-bg-elevated: #fffefb;
+  --sc-panel: rgba(255, 255, 255, 0.78);
+  --sc-panel-strong: rgba(255, 255, 255, 0.93);
+  --sc-panel-faint: rgba(255, 255, 255, 0.55);
+  --sc-bg-muted: #f2f4ef;
+  --sc-sidebar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, var(--sc-panel) 100%);
+  --sc-text: #34383a;
+  --sc-text-secondary: #7f8a86;
+  --sc-text-placeholder: #adb6b1;
+  --sc-border: #e4e8e0;
+  --sc-border-soft: #edf0e9;
+  --sc-border-strong: #d5dbd0;
+  --sc-overlay: rgba(52, 58, 54, 0.32);
+
+  /* ==================== 角色：功能色 ==================== */
+  --sc-success: #5aa877;
+  --sc-success-strong: #357a53;
+  --sc-warning: #dcae5c;
+  --sc-warning-strong: #a1762b;
+  --sc-error: #e0788a;
+  --sc-error-strong: #bf5568;
+
+  /* ==================== 角色：渐变与氛围 ==================== */
+  --sc-gradient-brand: linear-gradient(120deg, #7ecb9c 0%, #5fbfa8 100%);
+  --sc-gradient-brand-hover: linear-gradient(120deg, #8dd7a9 0%, #71cbb4 100%);
+  --sc-gradient-brand-active: linear-gradient(120deg, #6cbb8c 0%, #4fae98 100%);
+  --sc-gradient-soft: linear-gradient(120deg, #eef8f0 0%, #f3f8f7 52%, #eaf4f2 100%);
+  --sc-gradient-page: linear-gradient(165deg, #fbfaf7 0%, #f7fbf6 42%, #f1f7f5 100%);
+  --sc-nav-active-bg: linear-gradient(100deg, var(--sc-matcha-soft) 0%, var(--sc-mint-soft) 100%);
+  --sc-hero-glow: radial-gradient(circle, rgba(126, 203, 156, 0.42), transparent 68%);
+  /* 氛围换成马卡龙圆点：每层自己带尺寸与平铺方式，所以只覆盖这一个变量就够 */
+  --sc-backdrop:
+    radial-gradient(circle at 18% 22%, rgba(126, 203, 156, 0.2) 0 9px, transparent 10px) 0 0 /
+      380px 380px repeat,
+    radial-gradient(circle at 72% 14%, rgba(239, 159, 187, 0.17) 0 7px, transparent 8px) 0 0 / 300px
+      300px repeat,
+    radial-gradient(circle at 42% 78%, rgba(159, 146, 221, 0.16) 0 8px, transparent 9px) 0 0 / 460px
+      460px repeat,
+    radial-gradient(circle at 88% 62%, rgba(232, 180, 95, 0.14) 0 6px, transparent 7px) 0 0 / 340px
+      340px repeat,
+    var(--sc-gradient-page);
+  /*
+   * 角色插画装饰位：本期只预留机制，不提供素材。
+   * 素材到位后在这里补两行即可（高度为 0 时元素不占位，关掉不留空洞）：
+   *   --sc-character-image: url('/images/remi.png');
+   *   --sc-character-height: 132px;
+   */
+
+  /* ==================== 角色：统计卡色调 ==================== */
+  --sc-stat-purple-soft: rgba(159, 146, 221, 0.16);
+  --sc-stat-purple-strong: var(--sc-blueberry-strong);
+  --sc-stat-pink-soft: rgba(239, 159, 187, 0.18);
+  --sc-stat-pink-strong: var(--sc-berry-strong);
+  --sc-stat-amber-soft: rgba(232, 180, 95, 0.18);
+  --sc-stat-amber-strong: var(--sc-lemon-strong);
+  --sc-stat-mint-soft: rgba(79, 157, 111, 0.16);
+  --sc-stat-mint-strong: var(--sc-matcha-strong);
+  --sc-stat-slate-soft: rgba(127, 138, 134, 0.16);
+  --sc-stat-slate-strong: #5f6a66;
+
+  /* ==================== 角色：圆角（更小，偏「点心」而非「卡片」） ==================== */
+  --sc-radius-sm: 6px;
+  --sc-radius-md: 10px;
+  --sc-radius-lg: 14px;
+  --sc-radius-xl: 16px;
+  --sc-radius-pill: 999px;
+
+  /* ==================== 角色：阴影（去染色、压扁） ==================== */
+  --sc-shadow-sm: 0 1px 3px rgba(52, 58, 54, 0.06);
+  --sc-shadow-md: 0 4px 14px rgba(52, 58, 54, 0.08);
+  --sc-shadow-lg: 0 10px 26px rgba(52, 58, 54, 0.11);
+  --sc-shadow-brand: 0 6px 16px rgba(79, 157, 111, 0.26);
+  --sc-shadow-brand-hover: 0 8px 20px rgba(79, 157, 111, 0.32);
+  --sc-shadow-brand-active: 0 3px 10px rgba(53, 128, 90, 0.28);
+  --sc-focus-ring: 0 0 0 4px rgba(79, 157, 111, 0.16);
+
+  /* ==================== 角色：排版与布局（紧凑） ==================== */
+  /* 正文基准仍是 14px：工作台以阅读为主，靠留白而不是靠缩小字号来收紧密度 */
+  --sc-font-size-xl: 15px;
+  --sc-font-size-2xl: 16px;
+  --sc-font-size-3xl: 19px;
+  --sc-font-size-4xl: 20px;
+  --sc-font-size-5xl: 23px;
+  --sc-sidebar-w: 216px;
+  --sc-topbar-h: 56px;
+  --sc-content-max: 1320px;
+  --sc-content-pad: 22px;
+
+  /* ==================== Element Plus：主色阶梯按抹茶绿重算 ==================== */
+  /* light-N = mix(白, 主色, N×10%)，与 Element Plus 自己的算法一致 */
+  --el-color-primary: var(--sc-matcha);
+  --el-color-primary-light-3: #84ba9a;
+  --el-color-primary-light-5: #a7ceb7;
+  --el-color-primary-light-7: #cae1d3;
+  --el-color-primary-light-8: #dbebe2;
+  --el-color-primary-light-9: #edf5f0;
+  --el-color-primary-dark-2: #3f7d58;
+
+  --el-color-success: var(--sc-success);
+  --el-color-success-light-3: #8bc2a0;
+  --el-color-success-light-8: #deeee4;
+  --el-color-success-light-9: #eff6f1;
+  --el-color-warning: var(--sc-warning);
+  --el-color-warning-light-3: #e7c68d;
+  --el-color-warning-light-8: #f8efde;
+  --el-color-warning-light-9: #fcf7ef;
+  --el-color-danger: var(--sc-error);
+  --el-color-danger-light-3: #e9a1ad;
+  --el-color-danger-light-8: #f9e4e8;
+  --el-color-danger-light-9: #fcf2f3;
+  --el-color-error: var(--sc-error);
+  --el-color-info: #8a938f;
+  --el-color-info-light-8: #eceeeb;
+  --el-color-info-light-9: #f4f5f3;
+
+  --el-fill-color-blank: #fffefb;
+  --el-fill-color-lighter: #f6f8f3;
+  --el-input-bg-color: #fffefb;
+  --el-card-padding: 16px;
+  --el-dialog-padding-primary: 18px;
+  --el-progress-bg-color: #eef1ea;
+}
+
+/*
+ * ==================== 结构适配 ====================
+ * 只放「变量表达不了」的差异：排布方向、留白尺度。
+ * 用 html[data-skin='remi-macaron'] 前缀借 type 选择器压过组件 scoped 规则的权重。
+ */
+
+/* 统计卡改横排：图标在左、数值在右，同样 5 张卡占的高度更小 */
+html[data-skin='remi-macaron'] .stat-card {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 15px;
+}
+
+html[data-skin='remi-macaron'] .stat-icon {
+  margin-bottom: 0;
+}
+
+html[data-skin='remi-macaron'] .stat-value {
+  order: 3;
+  margin-left: auto;
+}
+
+/* 卡片网格与统计区收紧 */
+html[data-skin='remi-macaron'] .grid,
+html[data-skin='remi-macaron'] .future-grid {
+  gap: 12px;
+}
+
+html[data-skin='remi-macaron'] .stats {
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 10px;
+}
+
+/* 欢迎面板：留白减一档，配平更小的圆角 */
+html[data-skin='remi-macaron'] .hero {
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+html[data-skin='remi-macaron'] .block {
+  margin-bottom: 16px;
+}
+
+/* 侧栏条目与卡片头随密度一起收紧 */
+html[data-skin='remi-macaron'] .nav-item {
+  padding: 8px 12px;
+}
+
+html[data-skin='remi-macaron'] .el-card__header {
+  padding: 13px 16px;
+}
