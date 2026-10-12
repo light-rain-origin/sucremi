@@ -1,5 +1,8 @@
 package com.sucremi.project;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sucremi.common.api.PageResult;
 import com.sucremi.common.exception.BusinessException;
@@ -9,6 +12,8 @@ import com.sucremi.project.dto.ProjectCreateRequest;
 import com.sucremi.project.dto.ProjectQuery;
 import com.sucremi.project.dto.ProjectResponse;
 import com.sucremi.project.dto.ProjectUpdateRequest;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,8 +25,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +46,16 @@ class ProjectServiceImplTest {
     final CurrentUserResolver currentUser = () -> 7L;
 
     ProjectServiceImpl service;
+
+    /**
+     * 纯 Mockito 环境下没有 MyBatis 上下文，lambda 列引用需要先初始化实体元数据，
+     * 否则 {@code getSqlSegment()} 会抛 “can not find lambda cache”。
+     */
+    @BeforeAll
+    static void initTableInfo() {
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), ""), Project.class);
+    }
 
     @BeforeEach
     void setUp() {
@@ -99,6 +116,22 @@ class ProjectServiceImplTest {
     }
 
     @Test
+    void unarchiveThrows404WhenNotOwned() {
+        when(mapper.update(isNull(), any())).thenReturn(0);
+        assertThrows(ResourceNotFoundException.class, () -> service.unarchive(99L));
+    }
+
+    @Test
+    void archiveSucceedsWhenOwned() {
+        when(mapper.update(isNull(), any())).thenReturn(1);
+
+        service.archive(1L);
+        service.unarchive(1L);
+
+        verify(mapper, times(2)).update(isNull(), any());
+    }
+
+    @Test
     void listMapsPageResult() {
         Page<Project> page = new Page<>(1, 20);
         page.setRecords(List.of(project(1L, 7L)));
@@ -109,5 +142,50 @@ class ProjectServiceImplTest {
         assertEquals(1, result.total());
         assertEquals(1, result.list().size());
         assertEquals(1L, result.list().get(0).id());
+    }
+
+    /** 分页参数来自前端，必须夹取到 [1, 100]，避免一次拉全表。 */
+    @Test
+    @SuppressWarnings("unchecked")
+    void listClampsPageAndSize() {
+        Page<Project> page = new Page<>(1, 20);
+        page.setRecords(List.of());
+        page.setTotal(0);
+        ArgumentCaptor<Page<Project>> captor = ArgumentCaptor.forClass(Page.class);
+        when(mapper.selectPage(captor.capture(), any())).thenReturn(page);
+
+        ProjectQuery query = new ProjectQuery();
+        query.setPage(0);
+        query.setSize(1000);
+        service.list(query);
+
+        assertEquals(1, captor.getValue().getCurrent());
+        assertEquals(100, captor.getValue().getSize());
+    }
+
+    @Test
+    void listRejectsInvalidStatusFilter() {
+        ProjectQuery query = new ProjectQuery();
+        query.setStatus("NOPE");
+        assertThrows(BusinessException.class, () -> service.list(query));
+    }
+
+    /** 列表查询必须带上 user_id 条件（越权读不出别人的项目），并按 archived 切换归档/未归档。 */
+    @Test
+    @SuppressWarnings("unchecked")
+    void listScopesQueryToCurrentUserAndArchivedFlag() {
+        Page<Project> page = new Page<>(1, 20);
+        page.setRecords(List.of());
+        page.setTotal(0);
+        ArgumentCaptor<Wrapper<Project>> captor = ArgumentCaptor.forClass(Wrapper.class);
+        when(mapper.selectPage(any(), captor.capture())).thenReturn(page);
+
+        ProjectQuery query = new ProjectQuery();
+        query.setArchived(true);
+        service.list(query);
+
+        String sql = captor.getValue().getSqlSegment();
+        assertTrue(sql.contains("user_id"), "列表查询缺少 user_id 过滤: " + sql);
+        assertTrue(sql.contains("archived_at"), "归档列表缺少 archived_at 过滤: " + sql);
     }
 }
