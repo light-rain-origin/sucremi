@@ -1,54 +1,23 @@
-# web
+# apps/web —— Sucremi 前端
 
-This template should help get you started developing with Vue 3 in Vite.
+个人开发工作台的前端（Vue 3 + TypeScript + Vite + Pinia + Vue Router + Element Plus）。
 
-## Recommended IDE Setup
+项目背景、环境要求、数据库与联调方式见**仓库根目录 [`README.md`](../../README.md)** 与
+[`docs/DEVELOPMENT.md`](../../docs/DEVELOPMENT.md)，此处只列本包命令。
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+## 命令
 
 ```sh
-npm install
+npm install          # 安装依赖
+npm run dev          # 开发服务器（默认 5173，/api 代理到 8080）
+npm run build        # 类型检查 + 生产构建
+npm run test:unit -- --run   # 单元测试（Vitest）
+npm run lint         # oxlint + eslint
 ```
 
-### Compile and Hot-Reload for Development
+## 目录约定
 
-```sh
-npm run dev
-```
-
-### Type-Check, Compile and Minify for Production
-
-```sh
-npm run build
-```
-
-### Run Unit Tests with [Vitest](https://vitest.dev/)
-
-```sh
-npm run test:unit
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
+- `src/api/` —— 后端接口封装（统一 `ApiResponse` 结构）
+- `src/views/` —— 页面；`src/router/` 路由；`src/stores/` Pinia 状态
+- `src/components/` —— 可复用组件；`src/styles/tokens.css` 设计变量
+- `src/types/` —— 与后端 DTO 对应的类型

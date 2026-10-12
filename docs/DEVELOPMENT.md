@@ -59,6 +59,30 @@ cd apps/server && ./mvnw test
 cd apps/web && npm run test:unit -- --run
 ```
 
+### P0 测试矩阵（当前覆盖）
+
+| 层 | 用例 | 覆盖内容 |
+|----|------|----------|
+| 后端 · 启动 | `ServerApplicationTests` | 上下文可加载 |
+| 后端 · 接口 | `HealthApiTests` | `/health` 响应结构、`X-Request-Id` 透传 |
+| 后端 · 接口 | `ProjectControllerTest` | 路由、参数校验 400、不存在 404、非法 JSON 400 |
+| 后端 · 接口 | `DashboardControllerTest` | `/dashboard/summary` 字段结构（前端类型依赖） |
+| 后端 · 服务 | `ProjectServiceImplTest` | 所有权注入、跨用户/不存在 404、状态白名单、分页夹取、列表带 `user_id` 过滤 |
+| 后端 · 服务 | `DashboardServiceImplTest` | 计数装配、复用项目服务取最近项目 |
+| 后端 · 领域 | `ProjectStatusTest` / `IdentityResolverTest` | 状态白名单、开发身份与拒绝式兜底 |
+| 前端 · 组件 | `StatusTag` / `ProgressBar` / `ProjectCard` / `EmptyState` / `ProjectFormDialog` | 展示映射、进度渲染、卡片事件、必填校验拦截 |
+| 前端 · 布局 | `AppSidebar` | 导航渲染 |
+| 前端 · 状态 | `stores/project` / `stores/dashboard` | 列表/创建/归档成功与失败路径、错误信息透出 |
+| 前端 · 页面 | `ProjectsView` / `DashboardView` | 列表与空态、过滤器防抖与重置页码、翻页、统计卡与最近项目 |
+| 前端 · 工具 | `datetime` | 空值、正常格式化、非法输入回退 |
+
+未纳入单元测试的部分：MyBatis-Plus 生成的 SQL 与 Flyway 迁移只在**真实 MySQL** 上验证
+（`./mvnw spring-boot:run` + 手工/脚本冒烟），测试 profile 不建表。
+
+> 前端 `vitest.config.ts` 里 `server.deps.inline: ['element-plus']` 是必需的：若把它外部化交给
+> Node 直接加载，`async-validator` 的默认导出互操作会出问题，导致 `el-form` 校验静默失效
+> （表单级 `validate()` 对空必填字段也返回通过）。
+
 ## 构建
 
 ```bash
