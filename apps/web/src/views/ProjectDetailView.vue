@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { archiveProject, getProject, unarchiveProject, updateProject } from '@/api/project'
 import type { Project, ProjectForm } from '@/types/project'
@@ -10,7 +10,6 @@ import ProjectFormDialog from '@/components/ProjectFormDialog.vue'
 import { formatDateTime } from '@/utils/datetime'
 
 const route = useRoute()
-const router = useRouter()
 const id = route.params.id as string
 
 const project = ref<Project | null>(null)

@@ -28,7 +28,12 @@ watch(
     debouncedFetch()
   },
 )
-watch(() => query.value.page, () => store.fetchList())
+
+/** 翻页即时请求；不放进 watch，避免「过滤器重置页码」再触发一次重复请求。 */
+function onPageChange(page: number) {
+  query.value.page = page
+  store.fetchList()
+}
 
 onMounted(() => store.fetchList())
 
@@ -95,7 +100,7 @@ async function onCreate(form: ProjectForm) {
         :total="total"
         :page-size="query.size"
         :current-page="query.page"
-        @current-change="(p: number) => (query.page = p)"
+        @current-change="onPageChange"
       />
     </div>
 
