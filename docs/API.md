@@ -82,6 +82,11 @@
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/v1/dashboard/summary` | 当前用户的统计 + 最近项目 |
+| GET | `/api/v1/dashboard/project-flow` | 当前用户未归档项目的状态计数与进度列表 |
 
 `data`：`{ totalProjects, activeProjects, pausedProjects, doneProjects, archivedProjects, recentProjects[] }`。
 计数均限当前用户；前四项为未归档项目，`archivedProjects` 为已归档数；`recentProjects` 为最近更新的前 5 个未归档项目（`ProjectResponse` 列表）。
+
+`/dashboard/project-flow` 的 `data`：`{ unfinishedCount, ongoingCount, completedCount, projects[] }`。
+仅返回当前用户的未归档项目，按更新时间倒序；`unfinishedCount` 包含进行中与已暂停项目，
+`ongoingCount` 只统计进行中项目，`completedCount` 统计已完成项目；`projects` 为对应的 `ProjectResponse` 列表。
