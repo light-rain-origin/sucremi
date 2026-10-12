@@ -12,7 +12,7 @@ defineProps<{ value: number }>()
    因此无需 !important。 */
 :deep(.el-progress-bar__inner) {
   background-image: var(--sc-gradient-brand);
-  background-color: var(--sc-primary);
+  background-color: var(--sc-brand);
   border-radius: var(--sc-radius-pill);
 }
 
@@ -21,8 +21,8 @@ defineProps<{ value: number }>()
 }
 
 :deep(.el-progress__text) {
-  color: var(--sc-purple-strong);
-  font-size: 13px;
+  color: var(--sc-brand-alt-strong);
+  font-size: var(--sc-font-size-md);
   font-weight: 600;
 }
 </style>

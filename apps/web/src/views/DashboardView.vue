@@ -8,14 +8,15 @@ import { useProjectStore } from '@/stores/project'
 import type { ProjectForm } from '@/types/project'
 import AppIcon from '@/components/AppIcon.vue'
 import StatCard from '@/components/StatCard.vue'
-import ProjectCard from '@/components/ProjectCard.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import ProjectFormDialog from '@/components/ProjectFormDialog.vue'
+import ProjectOverviewCard from '@/components/ProjectOverviewCard.vue'
+import ProjectFlowCard from '@/components/ProjectFlowCard.vue'
 
 const router = useRouter()
 const dashboard = useDashboardStore()
 const projectStore = useProjectStore()
-const { summary, loading, error } = storeToRefs(dashboard)
+const { summary, loading, error, projectFlow, projectFlowLoading, projectFlowError } = storeToRefs(dashboard)
 
 const dialogVisible = ref(false)
 
@@ -33,7 +34,10 @@ const stats = computed(() => {
   ] as const
 })
 
-onMounted(() => dashboard.fetchSummary())
+onMounted(() => {
+  dashboard.fetchSummary()
+  dashboard.fetchProjectFlow()
+})
 
 function openDetail(id: number) {
   router.push(`/projects/${id}`)
@@ -45,6 +49,7 @@ async function onCreate(form: ProjectForm) {
     dialogVisible.value = false
     ElMessage.success('项目已创建')
     dashboard.fetchSummary()
+    dashboard.fetchProjectFlow()
     router.push(`/projects/${project.id}`)
   } catch (e) {
     ElMessage.error((e as Error).message || '创建失败')
@@ -81,23 +86,33 @@ async function onCreate(form: ProjectForm) {
       />
     </div>
 
-    <el-card shadow="never" class="block">
-      <template #header>
-        <div class="block-head">
-          <span class="block-title"><AppIcon name="folder" :size="17" />最近更新</span>
-          <RouterLink to="/projects" class="more">
-            全部项目<AppIcon name="arrow-right" :size="14" />
-          </RouterLink>
-        </div>
-      </template>
-      <EmptyState v-if="!loading && recent.length === 0" text="还没有项目，创建第一个吧">
+    <section class="flow-preview" aria-label="项目流程卡片预览">
+      <p class="preview-caption">项目状态与进度 · 最近更新</p>
+      <ProjectFlowCard
+        :flow="projectFlow"
+        :loading="projectFlowLoading"
+        :error="projectFlowError"
+        @open="openDetail"
+        @view-all="router.push('/projects')"
+      />
+    </section>
+
+    <ProjectOverviewCard
+      v-if="summary && summary.totalProjects > 0"
+      class="block"
+      :projects="recent"
+      :active-count="summary.activeProjects"
+      :paused-count="summary.pausedProjects"
+      :done-count="summary.doneProjects"
+      @open="openDetail"
+    />
+    <el-card v-else shadow="never" class="block">
+      <EmptyState v-if="!loading && summary && summary.totalProjects === 0" text="还没有项目，创建第一个吧">
         <el-button type="primary" @click="dialogVisible = true">
           <AppIcon name="plus" :size="16" />新建项目
         </el-button>
       </EmptyState>
-      <div v-else class="grid">
-        <ProjectCard v-for="p in recent" :key="p.id" :project="p" @open="openDetail" />
-      </div>
+      <EmptyState v-else-if="!loading && !summary" text="暂时无法加载项目概览" />
     </el-card>
 
     <!-- 占位区：明确标注尚未实现，避免看起来像可用功能 -->
@@ -135,7 +150,7 @@ async function onCreate(form: ProjectForm) {
   box-shadow: var(--sc-shadow-sm);
 }
 
-/* 右上角的粉色柔光，让面板不那么平 */
+/* 面板右上角的品牌柔光，让面板不那么平 */
 .hero-glow {
   position: absolute;
   top: -70px;
@@ -143,7 +158,7 @@ async function onCreate(form: ProjectForm) {
   width: 220px;
   height: 220px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(245, 168, 203, 0.42), transparent 68%);
+  background: var(--sc-hero-glow);
 }
 
 .hero-text {
@@ -152,7 +167,7 @@ async function onCreate(form: ProjectForm) {
 
 .greeting {
   margin: 0 0 4px;
-  font-size: 21px;
+  font-size: var(--sc-font-size-3xl);
   font-weight: 700;
 }
 
@@ -163,7 +178,7 @@ async function onCreate(form: ProjectForm) {
 
 .hero-sparkle {
   position: absolute;
-  color: var(--sc-pink);
+  color: var(--sc-brand);
   opacity: 0.7;
 }
 
@@ -175,7 +190,7 @@ async function onCreate(form: ProjectForm) {
 .hero-sparkle.s2 {
   bottom: 20px;
   right: 34%;
-  color: var(--sc-purple);
+  color: var(--sc-brand-alt);
   opacity: 0.5;
 }
 
@@ -209,6 +224,22 @@ async function onCreate(form: ProjectForm) {
   margin-bottom: 20px;
 }
 
+.flow-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.preview-caption {
+  width: min(100%, 668px);
+  margin: 0;
+  color: var(--sc-text-placeholder);
+  font-size: var(--sc-font-size-xs);
+  letter-spacing: 0.04em;
+}
+
 /* ---- 内容卡片 ---- */
 .block {
   border-radius: var(--sc-radius-xl);
@@ -231,20 +262,20 @@ async function onCreate(form: ProjectForm) {
 }
 
 .block-title .sc-icon {
-  color: var(--sc-purple);
+  color: var(--sc-brand-alt);
 }
 
 .more {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 13px;
+  font-size: var(--sc-font-size-md);
   color: var(--sc-text-secondary);
   transition: color 0.18s ease;
 }
 
 .more:hover {
-  color: var(--sc-pink-strong);
+  color: var(--sc-brand-strong);
 }
 
 .grid {
@@ -260,11 +291,11 @@ async function onCreate(form: ProjectForm) {
 
 .placeholder {
   border-style: dashed;
-  background: rgba(255, 252, 254, 0.55);
+  background: var(--sc-panel-faint);
 }
 
 .placeholder .muted {
-  font-size: 13px;
+  font-size: var(--sc-font-size-md);
   line-height: 1.7;
 }
 
@@ -273,9 +304,9 @@ async function onCreate(form: ProjectForm) {
   align-items: center;
   padding: 2px 10px;
   border-radius: var(--sc-radius-pill);
-  background: var(--sc-purple-soft);
-  color: var(--sc-purple-strong);
-  font-size: 12px;
+  background: var(--sc-brand-alt-soft);
+  color: var(--sc-brand-alt-strong);
+  font-size: var(--sc-font-size-sm);
   font-weight: 500;
 }
 

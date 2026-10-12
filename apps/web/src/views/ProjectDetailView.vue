@@ -132,7 +132,7 @@ async function toggleArchive() {
   color: var(--sc-text-secondary);
 }
 .back:hover {
-  color: var(--sc-primary);
+  color: var(--sc-brand);
 }
 .head {
   display: flex;
@@ -150,7 +150,7 @@ async function toggleArchive() {
 }
 .name {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--sc-font-size-4xl);
 }
 .head-ops {
   display: flex;
@@ -176,7 +176,7 @@ async function toggleArchive() {
 }
 .meta {
   margin: 4px 0 0;
-  font-size: 12px;
+  font-size: var(--sc-font-size-sm);
   color: var(--sc-text-placeholder);
 }
 .future-grid {
@@ -194,7 +194,7 @@ async function toggleArchive() {
 }
 .future-hint {
   color: var(--sc-text-placeholder);
-  font-size: 13px;
+  font-size: var(--sc-font-size-md);
 }
 .mb {
   margin-bottom: 12px;

@@ -32,7 +32,7 @@ withDefaults(defineProps<{ text?: string }>(), { text: '暂无数据' })
   border-radius: 50%;
   background: var(--sc-gradient-soft);
   border: 1px solid var(--sc-border-soft);
-  color: var(--sc-purple);
+  color: var(--sc-brand-alt);
 }
 
 .empty-text {

@@ -48,7 +48,7 @@ defineEmits<{ open: [id: number] }>()
 .project-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--sc-shadow-lg);
-  border-color: var(--sc-pink);
+  border-color: var(--sc-brand);
 }
 
 .pc-head {
@@ -60,7 +60,7 @@ defineEmits<{ open: [id: number] }>()
 
 .pc-name {
   font-weight: 600;
-  font-size: 16px;
+  font-size: var(--sc-font-size-xl);
   color: var(--sc-text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -83,7 +83,7 @@ defineEmits<{ open: [id: number] }>()
   align-items: center;
   gap: 6px;
   margin-top: 12px;
-  font-size: 12px;
+  font-size: var(--sc-font-size-sm);
   color: var(--sc-text-placeholder);
 }
 </style>
