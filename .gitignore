@@ -20,6 +20,10 @@ logs/
 .DS_Store
 Thumbs.db
 
+# IDE（IntelliJ IDEA 等）
+.idea/
+*.iml
+
 # 本地临时
 *.local
 *.tmp
