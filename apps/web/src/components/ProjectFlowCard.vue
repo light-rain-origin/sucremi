@@ -276,8 +276,13 @@ const moreLabel = computed(() => {
   overflow: hidden;
   border: 1px solid var(--sc-border-soft);
   border-radius: var(--sc-radius-xl);
-  background: var(--sc-gradient-soft);
-  box-shadow: var(--sc-shadow-sm);
+  /* 卡片是一块抬起来的浅色面板：右上角一片白光，底下垫一层很淡的粉紫，避免大块纯白
+     在粉紫页面里发灰。原先整张卡用的是 --sc-gradient-soft，和页面底色几乎是同一个
+     值，卡片就糊进背景里了；页面越花，越需要卡片自己「亮一层、抬一层」。 */
+  background:
+    radial-gradient(ellipse at 92% -6%, rgba(255, 255, 255, 0.97), transparent 54%),
+    linear-gradient(150deg, var(--sc-panel-strong) 0%, var(--sc-brand-soft) 118%);
+  box-shadow: var(--sc-shadow-md);
   color: var(--sc-text);
   font-family: var(--sc-font);
 }
@@ -500,15 +505,20 @@ const moreLabel = computed(() => {
 }
 
 /* 平均进度：浅色轨道 + 品牌渐变填充，和项目列表 / 概览卡的进度条是同一套语言；
-   内部再叠一颗光球与一道拖尾表示「现在到这里」。 */
+   内部再叠一颗光球与一道拖尾表示「现在到这里」。
+   轨道从 --sc-border-strong 换成 --sc-border-soft：深一档那个压在近白的卡片底上
+   读成一道旧旧的灰紫，浅一档更干净，也和项目列表的轨道是同一个值。 */
 .completion-pill {
-  /* 右端留给数字的一格；光球（含描边）探出填充前沿的半径；以及扣掉前两者之后
-     真正能用来画进度的宽度 —— 填充与光球共用它，两者因此永远同步。
-     以前这里是 `进度 * 0.72` 的魔数：为了让填充避开数字，整条刻度被压到 72%，
-     还说不清「72% 是哪来的」。现在留白是两个显式的值，量程本身是完整的。 */
+  /* 右端留给数字的一格，以及真正用来画进度的宽度 —— 填充与光球共用它，
+     两者因此永远同步。以前这里是 `进度 * 0.72` 的魔数：为了让填充避开数字，
+     整条刻度被压到 72%，还说不清「72% 是哪来的」。现在留白是一个显式的值，
+     量程本身是完整的。 */
   --completion-zone: 46px;
-  --completion-head: 7px;
-  --completion-area: calc(100% - var(--completion-zone) - var(--completion-head));
+  --completion-area: calc(100% - var(--completion-zone));
+  /* 光球直径，以及球心离填充前沿的偏移：半个球身再加 1px 余量，于是整颗球
+     都落在填充里面，只有辉光会洒到轨道上（辉光本来就该洒出来）。 */
+  --completion-orb-size: 8px;
+  --completion-orb-inset: calc(var(--completion-orb-size) / 2 + 1px);
   position: absolute;
   top: 132px;
   left: 68%;
@@ -516,13 +526,12 @@ const moreLabel = computed(() => {
   height: 38px;
   overflow: hidden;
   border-radius: var(--sc-radius-pill);
-  background: var(--sc-border-strong);
+  background: var(--sc-border-soft);
   color: var(--sc-text);
 }
 
-/* 填充宽度 =（轨道宽 − 数字格 − 光球外伸）× 比例，比例由模板写在 --completion-ratio 上。
-   两端都收成圆弧，前端跟着光球走。扣掉 --completion-head 是为了让光球（含描边）
-   的右缘正好停在数字格左缘：不扣的话 100% 时描边会压到数字上。 */
+/* 填充宽度 =（轨道宽 − 数字格）× 比例，比例由模板写在 --completion-ratio 上。
+   两端都收成圆弧，前端跟着光球走。 */
 .completion-fill {
   position: absolute;
   inset: 0 auto 0 0;
@@ -532,14 +541,13 @@ const moreLabel = computed(() => {
   transition: width 0.25s ease;
 }
 
-/* 光球后面拖出的尾迹。原来是覆盖整条进度的一层高光（28px 高），现在收成
-   贴中线的一道细楔形：根部只有 10px 高 —— 正好等于光球直径，右端顶在光球
-   所在的填充末端（right: 0），于是楔形的两个角正好落在光球轮廓上被盖住，
-   不会露出硬边；向左收成尖并淡出，读起来是光球甩出来的拖尾。
-   clip-path 做收尖，渐变做淡出；两者叠加才有「尾巴」的走向感。 */
+/* 光球后面拖出的尾迹：贴中线的一道细楔形，根部只有 8px 高 —— 正好等于光球
+   直径，根部右缘落在球心上（right 与光球的 inset 同值），于是楔形的两个尖角
+   正好落在球的轮廓上被球盖住，不会露出硬边；向左收成尖并淡出，读起来是
+   光球甩出来的拖尾。clip-path 做收尖，渐变做淡出；两者叠加才有走向感。 */
 .completion-fill::after {
   position: absolute;
-  inset: 14px 0 14px 14px;
+  inset: 15px var(--completion-orb-inset) 15px 14px;
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0.04) 0%,
@@ -549,20 +557,27 @@ const moreLabel = computed(() => {
   content: '';
 }
 
-/* 当前位置的光球。轨道换浅色之后白色球体自己就看不见了，因此给它一圈品牌色描边 ——
-   它一半压在渐变填充上、一半压在浅色轨道上，两边都要能读出来。
-   位置带一个下限：进度很低时如果让球心贴到轨道左端，胶囊的圆角会把球切掉一半，
-   而「现在在哪」这个指示器不该是残缺的，所以最低停在刚好不被裁的位置。 */
+/* 当前位置的光球。球心停在填充前沿往左 --completion-orb-inset 处，于是整颗球
+   （含右缘）都落在填充内部 —— 球一进填充，就不再需要描边去和轨道区分了，
+   白球压在粉紫渐变上本来就亮。原先那圈 --sc-brand-strong 描边是黑球时代的
+   东西，现在只会让球显得硬、像贴上去的塑料片；换成一层白色辉光才像「光」。
+   位置那个下限是给极低进度兜底的：填充宽不到 2 个 inset（8 + 2 = 10px，约 10%）
+   时容不下球，与其让球心跟着前沿往左、被胶囊圆角切掉半个，不如让它停在刚进
+   轨道一点点 —— 这时球会比填充探出几个像素，但它没有描边，探出去的部分只是
+   落在轨道上的辉光，读起来仍是「刚从起点出发」，不是残缺的指示器。 */
 .completion-orb {
   position: absolute;
   top: 50%;
-  left: max(var(--completion-head), calc(var(--completion-area) * var(--completion-ratio, 0)));
-  width: 10px;
-  height: 10px;
+  left: max(
+    var(--completion-orb-inset),
+    calc(var(--completion-area) * var(--completion-ratio, 0) - var(--completion-orb-inset))
+  );
+  width: var(--completion-orb-size);
+  height: var(--completion-orb-size);
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: var(--sc-brand-on);
-  box-shadow: 0 0 0 2px var(--sc-brand-strong);
+  box-shadow: var(--sc-flow-orb-glow);
   /* 与填充同一条 transition：光球是坐在填充前端的，只动宽度的话它会先跳到
      终点、填充再慢慢追上来，两者会脱开 0.25s */
   transition: left 0.25s ease;
