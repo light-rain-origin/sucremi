@@ -102,10 +102,11 @@ const displayProjects = computed(() => {
 const LINE_START_X = 286
 const JUNCTION = { x: 365, y: 90 }
 
-/** S 形连线的控制点水平跨度。这个值越大，两端越平、中段越陡：
-    24 让「水平离开胶囊 → 约 45° 斜切 → 水平汇入」三段各自看得出来，
-    而不是像一条被拉长的斜线。 */
-const S_SPAN = 24
+/** S 形连线的控制点水平跨度。这个值越大，两端越平、中段越陡 —— 它决定 S 有多明显。
+    通道总宽只有 79px（286 → 365），跨度过 39px 时两个控制点会互相越过，
+    曲线中段出现回折，所以 36 已经接近这条通道能做出的最陡的 S：
+    两端各留 36px 水平段，中段被压到约 52°。 */
+const S_SPAN = 36
 
 /** 线上的箭头三角形：尖端在原点、朝 +x，长 7 高 7。
     中点处那个靠 translate + rotate 摆到切线上，合并处那个只做 translate ——
@@ -178,9 +179,6 @@ const moreLabel = computed(() => {
       <template v-if="displayProjects.length">
         <svg class="connectors" viewBox="0 0 620 180" preserveAspectRatio="none" aria-hidden="true">
           <defs>
-            <marker :id="`${markerPrefix}-arrow-primary`" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
-              <path d="M0 0L7 3.5L0 7z" fill="var(--sc-brand-strong)" />
-            </marker>
             <marker :id="`${markerPrefix}-arrow-down`" markerWidth="7" markerHeight="7" refX="3.5" refY="6" orient="auto">
               <path d="M0 0L7 0L3.5 7z" fill="var(--sc-brand-strong)" />
             </marker>
@@ -201,18 +199,17 @@ const moreLabel = computed(() => {
             :d="ARROW_D"
             :transform="`translate(${path.arrow.x} ${path.arrow.y}) rotate(${path.arrow.angle})`"
           />
-          <path
-            class="connector-line connector-summary"
-            d="M365 90H431"
-            :marker-end="`url(#${markerPrefix}-arrow-primary)`"
-          />
+          <!-- 合并之后的干线：从合并箭头的尖端起步，本身不再带箭头 ——
+               箭头只留合并处那一个，避免同一根线上出现两个箭头 -->
+          <path class="connector-line connector-summary" d="M365 90H431" />
           <path
             class="connector-line connector-summary"
             d="M493 109V130"
             :marker-end="`url(#${markerPrefix}-arrow-down)`"
           />
-          <!-- 合并点：三根彩色连线在此汇聚，用一个右向箭头接住，替代原来只作标记的小圆点 -->
-          <path class="junction-arrow" :d="ARROW_D" transform="translate(372 90)" />
+          <!-- 合并点：三根彩色连线在 (365, 90) 汇聚，箭头尖端就落在这个点上，
+               所以读作「汇到这里 → 继续往右」，而不是汇完再往前一段才出现箭头 -->
+          <path class="junction-arrow" :d="ARROW_D" transform="translate(365 90)" />
         </svg>
 
         <button

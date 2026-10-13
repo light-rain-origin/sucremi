@@ -205,11 +205,11 @@ describe('ProjectFlowCard · 取数与配色', () => {
       .filter((el) => !el.classes().includes('connector-summary'))
 
     // 三行的中心是 35 / 90 / 145。第一个控制点与起点同高、第二个与合并点同高，
-    // 两端切线因此水平 —— 这就是 S 弧度的来源，不是一条斜线。
+    // 两端切线因此水平；控制点各占 36px，中段被挤到约 52° —— 这就是 S 的弧度。
     expect(lines.map((el) => el.attributes('d'))).toEqual([
-      'M286 35 C310 35 341 90 365 90',
-      'M286 90 C310 90 341 90 365 90',
-      'M286 145 C310 145 341 90 365 90',
+      'M286 35 C322 35 329 90 365 90',
+      'M286 90 C322 90 329 90 365 90',
+      'M286 145 C322 145 329 90 365 90',
     ])
   })
 
@@ -220,18 +220,30 @@ describe('ProjectFlowCard · 取数与配色', () => {
     const arrows = wrapper.findAll('.connector-arrow')
     expect(arrows).toHaveLength(tones(wrapper).length)
     expect(arrows.map((el) => el.classes().find((c) => c.startsWith('tone-')))).toEqual(tones(wrapper))
-    // 中点在 x = 325.5，角度跟着那一行的落差走：上行 +45°、中间行水平、下行 −45°
+    // 中点在 x = 325.5（与跨度无关），角度跟着那一行的落差走：上行 +52°、中间行水平、下行 −52°
     expect(arrows.map((el) => el.attributes('transform'))).toEqual([
-      'translate(325.5 62.5) rotate(45)',
+      'translate(325.5 62.5) rotate(52)',
       'translate(325.5 90) rotate(0)',
-      'translate(325.5 117.5) rotate(-45)',
+      'translate(325.5 117.5) rotate(-52)',
     ])
 
     // 同一个 d + 只做平移 ⇒ 与合并处的箭头必然同尺寸
     expect(arrows.every((el) => el.attributes('d') === TRIANGLE)).toBe(true)
     const junction = wrapper.get('.junction-arrow')
     expect(junction.attributes('d')).toBe(TRIANGLE)
-    expect(junction.attributes('transform')).toBe('translate(372 90)')
+    expect(junction.attributes('transform')).toBe('translate(365 90)')
     expect(wrapper.find('.connectors circle').exists()).toBe(false)
+  })
+
+  it('合并后的干线自身不带箭头，箭头只留在合并处', () => {
+    const wrapper = render({ flow: mixedFlow })
+
+    const summary = wrapper.findAll('path.connector-summary')
+    // 干线从合并点（365, 90）＝ 箭头尖端起步，末端不再有第二个箭头
+    const trunk = summary.find((el) => el.attributes('d') === 'M365 90H431')!
+    expect(trunk.attributes('marker-end')).toBeUndefined()
+    // 指向「平均进度」的那根下行箭头保留
+    const down = summary.find((el) => el.attributes('d') === 'M493 109V130')!
+    expect(down.attributes('marker-end')).toContain('arrow-down')
   })
 })
