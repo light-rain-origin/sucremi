@@ -184,4 +184,54 @@ describe('ProjectFlowCard · 取数与配色', () => {
     expect(colors.every((tone) => /^tone-[1-4]$/.test(tone))).toBe(true)
     expect(colors).toEqual(tones(second))
   })
+
+  it('每个项目的连线跟随自己胶囊的颜色，合并后的主线不跟', () => {
+    const wrapper = render({ flow: mixedFlow })
+
+    const lines = wrapper
+      .findAll('path.connector-line')
+      .filter((el) => !el.classes().includes('connector-summary'))
+      .map((el) => el.classes().find((c) => c.startsWith('tone-')))
+
+    expect(lines).toEqual(tones(wrapper))
+    expect(wrapper.findAll('path.connector-summary').every((el) => !el.classes().some((c) => c.startsWith('tone-')))).toBe(true)
+  })
+
+  it('连线是 S 形：两端切线水平，中段斜切', () => {
+    const wrapper = render({ flow: mixedFlow })
+
+    const lines = wrapper
+      .findAll('path.connector-line')
+      .filter((el) => !el.classes().includes('connector-summary'))
+
+    // 三行的中心是 35 / 90 / 145。第一个控制点与起点同高、第二个与合并点同高，
+    // 两端切线因此水平 —— 这就是 S 弧度的来源，不是一条斜线。
+    expect(lines.map((el) => el.attributes('d'))).toEqual([
+      'M286 35 C310 35 341 90 365 90',
+      'M286 90 C310 90 341 90 365 90',
+      'M286 145 C310 145 341 90 365 90',
+    ])
+  })
+
+  it('每根线在中点各带一个箭头，与合并处的箭头共用一个三角形', () => {
+    const wrapper = render({ flow: mixedFlow })
+    const TRIANGLE = 'M-7 -3.5L0 0L-7 3.5Z'
+
+    const arrows = wrapper.findAll('.connector-arrow')
+    expect(arrows).toHaveLength(tones(wrapper).length)
+    expect(arrows.map((el) => el.classes().find((c) => c.startsWith('tone-')))).toEqual(tones(wrapper))
+    // 中点在 x = 325.5，角度跟着那一行的落差走：上行 +45°、中间行水平、下行 −45°
+    expect(arrows.map((el) => el.attributes('transform'))).toEqual([
+      'translate(325.5 62.5) rotate(45)',
+      'translate(325.5 90) rotate(0)',
+      'translate(325.5 117.5) rotate(-45)',
+    ])
+
+    // 同一个 d + 只做平移 ⇒ 与合并处的箭头必然同尺寸
+    expect(arrows.every((el) => el.attributes('d') === TRIANGLE)).toBe(true)
+    const junction = wrapper.get('.junction-arrow')
+    expect(junction.attributes('d')).toBe(TRIANGLE)
+    expect(junction.attributes('transform')).toBe('translate(372 90)')
+    expect(wrapper.find('.connectors circle').exists()).toBe(false)
+  })
 })

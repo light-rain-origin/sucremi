@@ -98,11 +98,48 @@ const displayProjects = computed(() => {
   }))
 })
 
-const connectorPaths = computed(() => displayProjects.value.map(({ project, center }) => ({
-  id: project.id,
-  path: `M286 ${center} C338 ${center} 304 90 365 90`,
-  status: project.status,
-})))
+/** 一根连线的几何：起点钉在胶囊右缘，终点钉在三根线的合并点。 */
+const LINE_START_X = 286
+const JUNCTION = { x: 365, y: 90 }
+
+/** S 形连线的控制点水平跨度。这个值越大，两端越平、中段越陡：
+    24 让「水平离开胶囊 → 约 45° 斜切 → 水平汇入」三段各自看得出来，
+    而不是像一条被拉长的斜线。 */
+const S_SPAN = 24
+
+/** 线上的箭头三角形：尖端在原点、朝 +x，长 7 高 7。
+    中点处那个靠 translate + rotate 摆到切线上，合并处那个只做 translate ——
+    两处共用同一个 d，"大小一致"就是结构上保证的，不靠人眼对齐。 */
+const ARROW_D = 'M-7 -3.5L0 0L-7 3.5Z'
+
+/** 连线跟随胶囊配色：同一根线用同一个 tone，颜色本身就说明「这根线属于哪个项目」。
+    两个控制点分别与起点、终点同高，两端切线因此水平 —— 这是 S 弧度的来源。
+    中点和切线在三阶贝塞尔的 t = 0.5 处解析求出，改控制点时线上的箭头会跟着走，
+    不会和线脱节。 */
+const connectorPaths = computed(() =>
+  displayProjects.value.map(({ project, center, tone }) => {
+    const c1 = { x: LINE_START_X + S_SPAN, y: center }
+    const c2 = { x: JUNCTION.x - S_SPAN, y: JUNCTION.y }
+    const mid = {
+      x: (LINE_START_X + 3 * c1.x + 3 * c2.x + JUNCTION.x) / 8,
+      y: (center + 3 * c1.y + 3 * c2.y + JUNCTION.y) / 8,
+    }
+    // t = 0.5 处的切线方向 = 3/4 · (P3 + P2 − P1 − P0)
+    const dx = 0.75 * (JUNCTION.x + c2.x - c1.x - LINE_START_X)
+    const dy = 0.75 * (JUNCTION.y + c2.y - c1.y - center)
+
+    return {
+      id: project.id,
+      tone,
+      path: `M${LINE_START_X} ${center} C${c1.x} ${c1.y} ${c2.x} ${c2.y} ${JUNCTION.x} ${JUNCTION.y}`,
+      arrow: {
+        x: mid.x,
+        y: mid.y,
+        angle: Math.round((Math.atan2(dy, dx) * 180) / Math.PI),
+      },
+    }
+  }),
+)
 
 const moreLabel = computed(() => {
   const total = selectedProjects.value.length
@@ -111,11 +148,6 @@ const moreLabel = computed(() => {
     ? `显示最近 ${VISIBLE_ROWS} 个，共 ${total} 个项目`
     : `显示进度最高的 ${VISIBLE_ROWS} 个，共 ${total} 个项目`
 })
-
-/** 连线只跟状态走（进行中的连线统一用品牌色），不跟随胶囊的随机配色。 */
-function lineClass(status: ProjectStatus) {
-  return `tone-${status.toLowerCase()}`
-}
 </script>
 
 <template>
@@ -157,8 +189,17 @@ function lineClass(status: ProjectStatus) {
             v-for="path in connectorPaths"
             :key="path.id"
             class="connector-line"
-            :class="lineClass(path.status)"
+            :class="path.tone"
             :d="path.path"
+          />
+          <!-- 每根线在中点各带一个箭头，指着自己的去向；和合并处那个是同一个三角形 -->
+          <path
+            v-for="path in connectorPaths"
+            :key="`arrow-${path.id}`"
+            class="connector-arrow"
+            :class="path.tone"
+            :d="ARROW_D"
+            :transform="`translate(${path.arrow.x} ${path.arrow.y}) rotate(${path.arrow.angle})`"
           />
           <path
             class="connector-line connector-summary"
@@ -170,7 +211,8 @@ function lineClass(status: ProjectStatus) {
             d="M493 109V130"
             :marker-end="`url(#${markerPrefix}-arrow-down)`"
           />
-          <circle cx="365" cy="90" r="3.5" fill="var(--sc-brand-alt)" />
+          <!-- 合并点：三根彩色连线在此汇聚，用一个右向箭头接住，替代原来只作标记的小圆点 -->
+          <path class="junction-arrow" :d="ARROW_D" transform="translate(372 90)" />
         </svg>
 
         <button
@@ -325,22 +367,19 @@ function lineClass(status: ProjectStatus) {
 
 .connector-line {
   fill: none;
-  stroke: var(--sc-brand);
+  stroke: var(--tone, var(--sc-brand));
   stroke-width: 1.8;
   vector-effect: non-scaling-stroke;
 }
 
-.tone-active.connector-line,
-.connector-line.tone-active {
-  stroke: var(--sc-brand-strong);
+/* 线上的箭头跟着自己那根线的颜色走 */
+.connector-arrow {
+  fill: var(--tone, var(--sc-brand));
 }
 
-.connector-line.tone-paused {
-  stroke: var(--sc-warning-strong);
-}
-
-.connector-line.tone-done {
-  stroke: var(--sc-purple-strong);
+/* 合并点的箭头：与主线同色系，读作「三根线汇成一根，继续往右」 */
+.junction-arrow {
+  fill: var(--sc-brand-strong);
 }
 
 .project-pill {
@@ -355,6 +394,8 @@ function lineClass(status: ProjectStatus) {
   padding: 0 48px 0 22px;
   border: 1px solid rgba(255, 255, 255, 0.86);
   border-radius: var(--sc-radius-pill);
+  /* 底色来自 tone-* 声明的 --tone（见下），与自己的连线、线上箭头同色 */
+  background: var(--tone);
   color: #fff;
   text-align: left;
   box-shadow: var(--sc-shadow-sm);
@@ -363,29 +404,34 @@ function lineClass(status: ProjectStatus) {
 
 /* 胶囊配色。tone-1..4 是「进行中」的配色池，由脚本按项目 id 分配（见 assignPillTones），
    同屏内不重复；tone-paused / tone-done 是状态保留色，不参与分配。
-   这些颜色不承载业务含义，只用来把同屏的项目区分开。 */
+   这些颜色不承载业务含义，只用来把同屏的项目区分开。
+
+   一个 class 同时挂在三个地方：胶囊取 background、连线取 stroke、线上箭头取 fill。
+   所以 tone-* 只声明 --tone 这个色值，具体属性各自由相应元素去读 —— 颜色只写一遍，
+   同一个 class 挂到胶囊上还是挂到 path 上都不会互相干扰。合并之后的主线不带 tone 类，
+   落回 --sc-brand，于是「各自的流」和「汇合后的流」在颜色上是分开的。 */
 .tone-1 {
-  background: var(--sc-flow-tone-1);
+  --tone: var(--sc-flow-tone-1);
 }
 
 .tone-2 {
-  background: var(--sc-flow-tone-2);
+  --tone: var(--sc-flow-tone-2);
 }
 
 .tone-3 {
-  background: var(--sc-flow-tone-3);
+  --tone: var(--sc-flow-tone-3);
 }
 
 .tone-4 {
-  background: var(--sc-flow-tone-4);
+  --tone: var(--sc-flow-tone-4);
 }
 
 .tone-paused {
-  background: var(--sc-flow-tone-paused);
+  --tone: var(--sc-flow-tone-paused);
 }
 
 .tone-done {
-  background: var(--sc-flow-tone-done);
+  --tone: var(--sc-flow-tone-done);
 }
 
 .project-name {
