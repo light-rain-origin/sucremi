@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
-import type { ProjectStatus } from '@/types/project'
+import type { Project, ProjectStatus } from '@/types/project'
 import type { ProjectFlowSummary } from '@/types/dashboard'
 import { formatDateTime } from '@/utils/datetime'
 
@@ -13,6 +13,19 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ open: [id: number]; viewAll: [] }>()
+
+/** 画布高度只够放三行，多出来的项目靠底部「查看全部项目」承接。 */
+const VISIBLE_ROWS = 3
+
+/** 配色池大小，与 tokens 里的 --sc-flow-tone-1..4 一一对应。 */
+const ACTIVE_TONE_SLOTS = 4
+
+/** 状态保留色：已暂停恒为橙、已完成恒为紫。它们不参与随机分配，
+    所以这两个颜色在任何一屏、任何皮肤下都仍然只表示状态。 */
+const RESERVED_PILL_TONES: Partial<Record<ProjectStatus, string>> = {
+  PAUSED: 'tone-paused',
+  DONE: 'tone-done',
+}
 
 const selectedTab = ref<ProjectTab>('ongoing')
 const markerPrefix = useId().replace(/:/g, '')
@@ -30,10 +43,37 @@ const counts = computed<Record<ProjectTab, number>>(() => ({
 
 const selectedProjects = computed(() => {
   const projects = props.flow?.projects ?? []
-  if (selectedTab.value === 'unfinished') return projects.filter((project) => project.status !== 'DONE')
-  if (selectedTab.value === 'completed') return projects.filter((project) => project.status === 'DONE')
-  return projects.filter((project) => project.status === 'ACTIVE')
+  if (selectedTab.value === 'completed') {
+    return projects.filter((project) => project.status === 'DONE')
+  }
+  const matched =
+    selectedTab.value === 'unfinished'
+      ? projects.filter((project) => project.status !== 'DONE')
+      : projects.filter((project) => project.status === 'ACTIVE')
+  // 未完成 / 进行中只画进度最高的三条；sort 是稳定的，进度相同时保留
+  // 后端给的「最近更新在前」顺序。已完成不排序 —— 后端已按更新时间排好。
+  return matched.sort((a, b) => b.progress - a.progress)
 })
+
+/** 由 id 定的伪随机槽位：同一个项目每次渲染都落在同一个颜色上。
+    换成 Math.random() 的话，切一次页签颜色就重排一遍，颜色就不再是任何东西的线索。 */
+function toneSlot(id: number) {
+  return Math.abs(Math.imul(id, 2654435761)) % ACTIVE_TONE_SLOTS
+}
+
+/** 给这一屏的项目分配胶囊配色：进行中的从配色池里取，撞色就往后顺延一个空槽，
+    尽量让同屏出现的颜色互不相同；已暂停 / 已完成用状态保留色。 */
+function assignPillTones(projects: Project[]): string[] {
+  const taken = new Set<number>()
+  return projects.map((project) => {
+    const reserved = RESERVED_PILL_TONES[project.status]
+    if (reserved) return reserved
+    let slot = toneSlot(project.id)
+    while (taken.has(slot)) slot = (slot + 1) % ACTIVE_TONE_SLOTS
+    taken.add(slot)
+    return `tone-${slot + 1}`
+  })
+}
 
 const averageProgress = computed(() => {
   if (!selectedProjects.value.length) return 0
@@ -43,7 +83,8 @@ const averageProgress = computed(() => {
 const selectedLabel = computed(() => tabs.find((tab) => tab.id === selectedTab.value)?.label ?? '项目')
 
 const displayProjects = computed(() => {
-  const projects = selectedProjects.value.slice(0, 3)
+  const projects = selectedProjects.value.slice(0, VISIBLE_ROWS)
+  const tones = assignPillTones(projects)
   const gap = 55
   const rowHeight = 42
   const totalHeight = projects.length * rowHeight + Math.max(0, projects.length - 1) * (gap - rowHeight)
@@ -51,6 +92,7 @@ const displayProjects = computed(() => {
 
   return projects.map((project, index) => ({
     project,
+    tone: tones[index],
     top: start + index * gap,
     center: start + index * gap + rowHeight / 2,
   }))
@@ -62,7 +104,16 @@ const connectorPaths = computed(() => displayProjects.value.map(({ project, cent
   status: project.status,
 })))
 
-function toneClass(status: ProjectStatus) {
+const moreLabel = computed(() => {
+  const total = selectedProjects.value.length
+  if (total <= VISIBLE_ROWS) return `共 ${total} 个项目`
+  return selectedTab.value === 'completed'
+    ? `显示最近 ${VISIBLE_ROWS} 个，共 ${total} 个项目`
+    : `显示进度最高的 ${VISIBLE_ROWS} 个，共 ${total} 个项目`
+})
+
+/** 连线只跟状态走（进行中的连线统一用品牌色），不跟随胶囊的随机配色。 */
+function lineClass(status: ProjectStatus) {
   return `tone-${status.toLowerCase()}`
 }
 </script>
@@ -106,7 +157,7 @@ function toneClass(status: ProjectStatus) {
             v-for="path in connectorPaths"
             :key="path.id"
             class="connector-line"
-            :class="toneClass(path.status)"
+            :class="lineClass(path.status)"
             :d="path.path"
           />
           <path
@@ -127,7 +178,7 @@ function toneClass(status: ProjectStatus) {
           :key="row.project.id"
           type="button"
           class="project-pill"
-          :class="toneClass(row.project.status)"
+          :class="row.tone"
           :style="{ '--row-top': `${row.top}px` }"
           :aria-label="`${row.project.name}，更新于 ${formatDateTime(row.project.updatedAt)}，进度 ${row.project.progress}%`"
           @click="emit('open', row.project.id)"
@@ -162,7 +213,7 @@ function toneClass(status: ProjectStatus) {
         <span><i class="legend-swatch paused" />已暂停</span>
         <span><i class="legend-swatch completed" />已完成</span>
       </div>
-      <span class="foot-note">{{ selectedProjects.length > 3 ? `显示最近 3 个，共 ${selectedProjects.length} 个项目` : `共 ${selectedProjects.length} 个项目` }}</span>
+      <span class="foot-note">{{ moreLabel }}</span>
       <button class="view-all" type="button" @click="emit('viewAll')">查看全部项目 <span aria-hidden="true">→</span></button>
     </footer>
   </section>
@@ -310,16 +361,31 @@ function toneClass(status: ProjectStatus) {
   cursor: pointer;
 }
 
-.tone-active {
-  background: linear-gradient(105deg, #ef8bb4 0%, #ec9bcb 100%);
+/* 胶囊配色。tone-1..4 是「进行中」的配色池，由脚本按项目 id 分配（见 assignPillTones），
+   同屏内不重复；tone-paused / tone-done 是状态保留色，不参与分配。
+   这些颜色不承载业务含义，只用来把同屏的项目区分开。 */
+.tone-1 {
+  background: var(--sc-flow-tone-1);
+}
+
+.tone-2 {
+  background: var(--sc-flow-tone-2);
+}
+
+.tone-3 {
+  background: var(--sc-flow-tone-3);
+}
+
+.tone-4 {
+  background: var(--sc-flow-tone-4);
 }
 
 .tone-paused {
-  background: linear-gradient(105deg, #f2ad65 0%, #edc270 100%);
+  background: var(--sc-flow-tone-paused);
 }
 
 .tone-done {
-  background: linear-gradient(105deg, #8e6dcc 0%, #a987dc 100%);
+  background: var(--sc-flow-tone-done);
 }
 
 .project-name {
@@ -472,16 +538,23 @@ function toneClass(status: ProjectStatus) {
   border-radius: var(--sc-radius-pill);
 }
 
+/* 进行中是多色，图例用一条跨整套配色池的渐变表示，而不是单色 */
 .legend-swatch.ongoing {
-  background: linear-gradient(90deg, #ef8bb4, #ec9bcb);
+  background: linear-gradient(
+    90deg,
+    var(--sc-flow-tone-1),
+    var(--sc-flow-tone-2),
+    var(--sc-flow-tone-3),
+    var(--sc-flow-tone-4)
+  );
 }
 
 .legend-swatch.paused {
-  background: linear-gradient(90deg, #f2ad65, #edc270);
+  background: var(--sc-flow-tone-paused);
 }
 
 .legend-swatch.completed {
-  background: linear-gradient(90deg, #8e6dcc, #a987dc);
+  background: var(--sc-flow-tone-done);
 }
 
 .foot-note {

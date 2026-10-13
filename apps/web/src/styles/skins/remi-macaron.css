@@ -111,6 +111,16 @@ html[data-skin='remi-macaron'] {
   --sc-stat-slate-soft: rgba(127, 138, 134, 0.16);
   --sc-stat-slate-strong: #5f6a66;
 
+  /* ==================== 角色：项目流程卡配色池 ==================== */
+  /* 池里刻意不放绿色：马卡龙的抹茶和薄荷只差 23°，同屏出现时看着像同一个颜色，
+     就失去了「用颜色区分项目」的意义。绿色留给已完成的深抹茶，语义上也更顺。 */
+  --sc-flow-tone-1: var(--sc-berry);
+  --sc-flow-tone-2: #7fb3e0;
+  --sc-flow-tone-3: var(--sc-mint);
+  --sc-flow-tone-4: var(--sc-blueberry);
+  --sc-flow-tone-paused: var(--sc-lemon);
+  --sc-flow-tone-done: var(--sc-matcha-strong);
+
   /* ==================== 角色：圆角（更小，偏「点心」而非「卡片」） ==================== */
   --sc-radius-sm: 6px;
   --sc-radius-md: 10px;

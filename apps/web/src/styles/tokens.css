@@ -112,6 +112,17 @@
   --sc-stat-slate-soft: rgba(140, 129, 152, 0.14);
   --sc-stat-slate-strong: #6b6277;
 
+  /* ==================== ② 角色：项目流程卡配色池 ==================== */
+  /* tone-1..4 给「进行中」的项目随机分配，用来在一屏里把不同项目区分开；
+     paused / done 是状态保留色，永不参与分配，所以「橙=已暂停、紫=已完成」始终成立。
+     数量与 ProjectFlowCard.vue 里的 ACTIVE_TONE_SLOTS 一一对应，改一边要改另一边。 */
+  --sc-flow-tone-1: #ef8bb4;
+  --sc-flow-tone-2: #8ba8e8;
+  --sc-flow-tone-3: #5fc0ad;
+  --sc-flow-tone-4: #a8cd6e;
+  --sc-flow-tone-paused: #f2ad65;
+  --sc-flow-tone-done: #8e6dcc;
+
   /* ==================== ② 角色：圆角 ==================== */
   --sc-radius-sm: 8px;
   --sc-radius-md: 12px;
