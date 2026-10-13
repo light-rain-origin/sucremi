@@ -87,6 +87,8 @@ describe('DashboardView', () => {
     expect(text).toContain('3')
     expect(text).toContain('最近项目')
     expect(text).toContain('项目状态与整体进度')
+    expect(text).toContain('今日继续')
+    expect(text).toContain('继续这个项目')
     expect(text).toContain('20%')
   })
 

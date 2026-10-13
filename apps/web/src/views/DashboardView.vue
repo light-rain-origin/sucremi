@@ -12,6 +12,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import ProjectFormDialog from '@/components/ProjectFormDialog.vue'
 import ProjectOverviewCard from '@/components/ProjectOverviewCard.vue'
 import ProjectFlowCard from '@/components/ProjectFlowCard.vue'
+import TodayContinueCard from '@/components/TodayContinueCard.vue'
 
 const router = useRouter()
 const dashboard = useDashboardStore()
@@ -59,15 +60,24 @@ async function onCreate(form: ProjectForm) {
 
 <template>
   <section class="dashboard">
-    <!-- 项目流程卡片预览：置顶靠左，先给一眼全局的项目态势，再往下是欢迎区与统计 -->
-    <section class="flow-preview" aria-label="项目流程卡片预览">
-      <p class="preview-caption">项目状态与进度 · 最近更新</p>
-      <ProjectFlowCard
-        :flow="projectFlow"
+    <!-- 首页主工作区：左侧看项目全局，右侧由 Remi 陪伴继续最近的工作。 -->
+    <section class="dashboard-focus" aria-label="项目工作区">
+      <div class="flow-preview">
+        <p class="preview-caption">项目状态与进度 · 最近更新</p>
+        <ProjectFlowCard
+          :flow="projectFlow"
+          :loading="projectFlowLoading"
+          :error="projectFlowError"
+          @open="openDetail"
+          @view-all="router.push('/projects')"
+        />
+      </div>
+      <TodayContinueCard
+        :projects="projectFlow?.projects ?? []"
         :loading="projectFlowLoading"
         :error="projectFlowError"
         @open="openDetail"
-        @view-all="router.push('/projects')"
+        @create="dialogVisible = true"
       />
     </section>
 
@@ -225,18 +235,26 @@ async function onCreate(form: ProjectForm) {
   margin-bottom: 20px;
 }
 
-/* 流程卡片预览：置顶、靠左。
-   卡片与说明文字都是 668px 宽，flex-start 让两者左边缘对齐（原来是居中）。 */
+/* 首页主工作区：总览与陪伴卡并列，窄屏自然堆叠。 */
+.dashboard-focus {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(260px, 1fr);
+  align-items: stretch;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
 .flow-preview {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  margin-bottom: 20px;
+  min-width: 0;
 }
 
 .preview-caption {
-  width: min(100%, 668px);
+  width: 100%;
+  max-width: 668px;
   margin: 0;
   color: var(--sc-text-placeholder);
   font-size: var(--sc-font-size-xs);
@@ -315,5 +333,18 @@ async function onCreate(form: ProjectForm) {
 
 .mb {
   margin-bottom: 12px;
+}
+
+@media (max-width: 900px) {
+  .dashboard-focus {
+    grid-template-columns: minmax(0, 1.5fr) minmax(250px, 1fr);
+    gap: 14px;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-focus {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 </style>

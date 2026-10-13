@@ -78,7 +78,9 @@ describe('ProjectFlowCard', () => {
     expect(wrapper.text()).toContain('Sucremi 工作台')
     expect(wrapper.text()).toContain('灵感收集器')
     expect(wrapper.text()).not.toContain('个人主页')
-    expect(wrapper.find('[role="img"]').attributes('aria-label')).toContain('平均进度 30%')
+    const bar = wrapper.get('[role="progressbar"]')
+    expect(bar.attributes('aria-label')).toContain('平均进度')
+    expect(bar.attributes('aria-valuenow')).toBe('30')
   })
 
   it('emits the selected project id and the view-all action', async () => {
@@ -235,13 +237,29 @@ describe('ProjectFlowCard · 取数与配色', () => {
     expect(wrapper.find('.connectors circle').exists()).toBe(false)
   })
 
-  it('合并后的干线自身不带箭头，箭头只留在合并处', () => {
+  it('平均进度按完整量程映射：填充与光球都由 --completion-ratio 推导', () => {
+    const wrapper = render({ flow: mixedFlow })
+
+    // 进行中：90 / 70 / 10，平均 57
+    const bar = wrapper.get('[role="progressbar"]')
+    expect(bar.attributes('aria-valuenow')).toBe('57')
+    expect(bar.attributes('aria-valuemax')).toBe('100')
+    // 模板只给 0..1 的比例，宽度与位置都在 CSS 里算 —— 不再有第二个魔数
+    expect(bar.attributes('style')).toMatch(/--completion-ratio:\s*0\.57/)
+    expect(wrapper.get('.completion-fill').attributes('style')).toBeUndefined()
+    expect(wrapper.get('.completion-orb').attributes('style')).toBeUndefined()
+  })
+
+  it('合并后的干线自身不带箭头，箭头只留在合并处，且右端伸进「平均进度」不留空隙', () => {
     const wrapper = render({ flow: mixedFlow })
 
     const summary = wrapper.findAll('path.connector-summary')
     // 干线从合并点（365, 90）＝ 箭头尖端起步，末端不再有第二个箭头
-    const trunk = summary.find((el) => el.attributes('d') === 'M365 90H431')!
+    const trunk = summary.find((el) => el.attributes('d') === 'M365 90H440')!
     expect(trunk.attributes('marker-end')).toBeUndefined()
+    // 「平均进度」是胶囊，圆角让它的左缘在中线处比矩形框更靠右（约 SVG x = 434）；
+    // 干线不到这个位置就会露出一道缝
+    expect(Number(/H(\d+)/.exec(trunk.attributes('d') ?? '')?.[1])).toBeGreaterThanOrEqual(434)
     // 指向「平均进度」的那根下行箭头保留
     const down = summary.find((el) => el.attributes('d') === 'M493 109V130')!
     expect(down.attributes('marker-end')).toContain('arrow-down')

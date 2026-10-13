@@ -200,8 +200,12 @@ const moreLabel = computed(() => {
             :transform="`translate(${path.arrow.x} ${path.arrow.y}) rotate(${path.arrow.angle})`"
           />
           <!-- 合并之后的干线：从合并箭头的尖端起步，本身不再带箭头 ——
-               箭头只留合并处那一个，避免同一根线上出现两个箭头 -->
-          <path class="connector-line connector-summary" d="M365 90H431" />
+               箭头只留合并处那一个，避免同一根线上出现两个箭头。
+               右端伸到 440：干线在 y = 90 这条水平线上，而「平均进度」是胶囊，
+               它左端的圆角在中线处比矩形框更靠右，画到 431 会差出约 3px 的空隙；
+               440 让干线压进节点底下几个像素，衔接处不留缝，多出来的部分被
+               节点的不透明底色盖住（节点在 DOM 里排在 svg 之后）。 -->
+          <path class="connector-line connector-summary" d="M365 90H440" />
           <path
             class="connector-line connector-summary"
             d="M493 109V130"
@@ -230,13 +234,20 @@ const moreLabel = computed(() => {
 
         <div class="summary-node">平均进度</div>
 
+        <!-- 平均进度：与项目列表 / 概览卡同一套进度条语言（浅色轨道 + 品牌渐变填充），
+             数字单独占右端一格。填充宽度与光球位置都在 CSS 里由 --completion-ratio
+             推导，这里只给一个 0..1 的比例 —— 0% 到 100% 就是完整量程。 -->
         <div
           class="completion-pill"
-          role="img"
-          :aria-label="`当前筛选项目平均进度 ${averageProgress}%`"
+          role="progressbar"
+          :aria-label="`${selectedLabel}项目平均进度`"
+          :aria-valuenow="averageProgress"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          :style="{ '--completion-ratio': averageProgress / 100 }"
         >
-          <span class="completion-fill" :style="{ width: `${averageProgress * 0.72}%` }" />
-          <span class="completion-orb" :style="{ left: `calc(${averageProgress * 0.72}% - 5px)` }" />
+          <span class="completion-fill" />
+          <span class="completion-orb" />
           <strong>{{ averageProgress }}%</strong>
         </div>
       </template>
@@ -488,7 +499,16 @@ const moreLabel = computed(() => {
   white-space: nowrap;
 }
 
+/* 平均进度：浅色轨道 + 品牌渐变填充，和项目列表 / 概览卡的进度条是同一套语言；
+   内部再叠一颗光球与一道拖尾表示「现在到这里」。 */
 .completion-pill {
+  /* 右端留给数字的一格；光球（含描边）探出填充前沿的半径；以及扣掉前两者之后
+     真正能用来画进度的宽度 —— 填充与光球共用它，两者因此永远同步。
+     以前这里是 `进度 * 0.72` 的魔数：为了让填充避开数字，整条刻度被压到 72%，
+     还说不清「72% 是哪来的」。现在留白是两个显式的值，量程本身是完整的。 */
+  --completion-zone: 46px;
+  --completion-head: 7px;
+  --completion-area: calc(100% - var(--completion-zone) - var(--completion-head));
   position: absolute;
   top: 132px;
   left: 68%;
@@ -496,48 +516,73 @@ const moreLabel = computed(() => {
   height: 38px;
   overflow: hidden;
   border-radius: var(--sc-radius-pill);
-  background: var(--sc-text);
-  color: #fff;
+  background: var(--sc-border-strong);
+  color: var(--sc-text);
 }
 
+/* 填充宽度 =（轨道宽 − 数字格 − 光球外伸）× 比例，比例由模板写在 --completion-ratio 上。
+   两端都收成圆弧，前端跟着光球走。扣掉 --completion-head 是为了让光球（含描边）
+   的右缘正好停在数字格左缘：不扣的话 100% 时描边会压到数字上。 */
 .completion-fill {
   position: absolute;
   inset: 0 auto 0 0;
-  max-width: 72%;
-  border-radius: inherit;
+  width: calc(var(--completion-area) * var(--completion-ratio, 0));
+  border-radius: var(--sc-radius-pill);
   background: var(--sc-gradient-brand);
   transition: width 0.25s ease;
 }
 
+/* 光球后面拖出的尾迹。原来是覆盖整条进度的一层高光（28px 高），现在收成
+   贴中线的一道细楔形：根部只有 10px 高 —— 正好等于光球直径，右端顶在光球
+   所在的填充末端（right: 0），于是楔形的两个角正好落在光球轮廓上被盖住，
+   不会露出硬边；向左收成尖并淡出，读起来是光球甩出来的拖尾。
+   clip-path 做收尖，渐变做淡出；两者叠加才有「尾巴」的走向感。 */
 .completion-fill::after {
   position: absolute;
-  inset: 5px 5px 5px 14px;
-  border-radius: inherit;
-  background: rgba(255, 255, 255, 0.24);
+  inset: 14px 0 14px 14px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.4) 100%
+  );
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
   content: '';
 }
 
+/* 当前位置的光球。轨道换浅色之后白色球体自己就看不见了，因此给它一圈品牌色描边 ——
+   它一半压在渐变填充上、一半压在浅色轨道上，两边都要能读出来。
+   位置带一个下限：进度很低时如果让球心贴到轨道左端，胶囊的圆角会把球切掉一半，
+   而「现在在哪」这个指示器不该是残缺的，所以最低停在刚好不被裁的位置。 */
 .completion-orb {
   position: absolute;
   top: 50%;
+  left: max(var(--completion-head), calc(var(--completion-area) * var(--completion-ratio, 0)));
   width: 10px;
   height: 10px;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+  background: var(--sc-brand-on);
+  box-shadow: 0 0 0 2px var(--sc-brand-strong);
+  /* 与填充同一条 transition：光球是坐在填充前端的，只动宽度的话它会先跳到
+     终点、填充再慢慢追上来，两者会脱开 0.25s */
+  transition: left 0.25s ease;
 }
 
+/* 数字格：占住右端固定宽度，让填充与光球都停在它左边。
+   试过给这一格加浅色面板把「刻度区 / 读数区」分开，但面板比轨道更接近卡片底色，
+   胶囊右端的圆角会跟着消失、整条看起来像被切掉一截，所以留白保持与轨道同色 ——
+   读比例时以标签为准。 */
 .completion-pill strong {
   position: absolute;
   top: 0;
   right: 0;
   display: grid;
-  width: 42px;
+  width: var(--completion-zone);
   height: 100%;
   place-items: center;
-  font-size: var(--sc-font-size-xs);
+  font-size: var(--sc-font-size-md);
   font-weight: 650;
+  font-variant-numeric: tabular-nums;
 }
 
 .empty-state {
@@ -685,7 +730,8 @@ const moreLabel = computed(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .tab,
-  .completion-fill {
+  .completion-fill,
+  .completion-orb {
     transition: none;
   }
 }
