@@ -136,7 +136,8 @@ html[data-skin='remi-macaron'] {
   --sc-font-size-5xl: 23px;
   --sc-sidebar-w: 216px;
   --sc-topbar-h: 56px;
-  --sc-content-max: 1320px;
+  /* 比 Classic 再宽一档：侧栏与内边距都更小，保持「同一屏装下更多」的紧凑取向 */
+  --sc-content-max: 1560px;
   --sc-content-pad: 22px;
 
   /* ==================== Element Plus：主色阶梯按抹茶绿重算 ==================== */

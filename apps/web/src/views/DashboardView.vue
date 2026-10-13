@@ -59,6 +59,18 @@ async function onCreate(form: ProjectForm) {
 
 <template>
   <section class="dashboard">
+    <!-- 项目流程卡片预览：置顶靠左，先给一眼全局的项目态势，再往下是欢迎区与统计 -->
+    <section class="flow-preview" aria-label="项目流程卡片预览">
+      <p class="preview-caption">项目状态与进度 · 最近更新</p>
+      <ProjectFlowCard
+        :flow="projectFlow"
+        :loading="projectFlowLoading"
+        :error="projectFlowError"
+        @open="openDetail"
+        @view-all="router.push('/projects')"
+      />
+    </section>
+
     <!-- 欢迎区：粉紫柔光面板，星星仅为装饰（aria-hidden），不承载信息 -->
     <section class="hero">
       <span class="hero-glow" aria-hidden="true" />
@@ -85,17 +97,6 @@ async function onCreate(form: ProjectForm) {
         :tone="s.tone"
       />
     </div>
-
-    <section class="flow-preview" aria-label="项目流程卡片预览">
-      <p class="preview-caption">项目状态与进度 · 最近更新</p>
-      <ProjectFlowCard
-        :flow="projectFlow"
-        :loading="projectFlowLoading"
-        :error="projectFlowError"
-        @open="openDetail"
-        @view-all="router.push('/projects')"
-      />
-    </section>
 
     <ProjectOverviewCard
       v-if="summary && summary.totalProjects > 0"
@@ -224,10 +225,12 @@ async function onCreate(form: ProjectForm) {
   margin-bottom: 20px;
 }
 
+/* 流程卡片预览：置顶、靠左。
+   卡片与说明文字都是 668px 宽，flex-start 让两者左边缘对齐（原来是居中）。 */
 .flow-preview {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   margin-bottom: 20px;
 }

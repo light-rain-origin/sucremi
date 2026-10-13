@@ -144,7 +144,9 @@
   --sc-font-size-5xl: 26px;
   --sc-sidebar-w: 232px;
   --sc-topbar-h: 60px;
-  --sc-content-max: 1180px;
+  /* 内容区上限：宽屏下限制行长，避免卡片被拉得过散。
+     1440px 是实测调整的结果 —— 1180px 时 1920 窗口右侧要空掉 249px，内容显得缩在中间。 */
+  --sc-content-max: 1440px;
   --sc-content-pad: 28px;
   --sc-space: 8px;
 
