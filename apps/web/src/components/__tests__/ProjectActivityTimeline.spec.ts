@@ -49,6 +49,25 @@ describe('ProjectActivityTimeline', () => {
     expect(wrapper.text()).toContain('还没有活动记录')
   })
 
+  it('shows the short decision title from versioned activity metadata', async () => {
+    mockedProjectActivities.mockResolvedValue({
+      code: 0,
+      message: 'OK',
+      data: {
+        list: [{ ...event, eventType: 'DECISION_ACCEPTED' as const, metadata: '{"decisionId":9,"title":"采用 Pinia"}' }],
+        total: 1,
+        page: 1,
+        size: 10,
+      },
+      requestId: 'r',
+      timestamp: 1,
+    })
+    const wrapper = mount(ProjectActivityTimeline, { props: { projectId: 4 } })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('采纳了决策「采用 Pinia」')
+  })
+
   it('surfaces API errors with a retry action', async () => {
     mockedProjectActivities.mockResolvedValue({
       code: 50000, message: '活动暂时不可用', data: null as never, requestId: 'r', timestamp: 1,

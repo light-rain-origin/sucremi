@@ -1,4 +1,5 @@
 import type { Project } from './project'
+import type { KeyDecision } from './decision'
 
 /** 与后端检查点响应对应。 */
 export interface ProjectCheckpoint {
@@ -31,6 +32,7 @@ export interface ProjectRecovery {
   latestCheckpoint: ProjectCheckpoint | null
   actions: ProjectAction[]
   recoverySummary: string | null
+  keyDecisions: KeyDecision[]
 }
 
 export interface CreateCheckpointPayload {

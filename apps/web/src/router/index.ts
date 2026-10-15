@@ -8,6 +8,11 @@ import EmptyModuleView from '@/views/EmptyModuleView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior(to, _from, savedPosition) {
+    if (savedPosition) return savedPosition
+    if (to.hash) return { el: to.hash, behavior: 'smooth' }
+    return { top: 0 }
+  },
   routes: [
     {
       path: '/',
@@ -39,6 +44,12 @@ const router = createRouter({
           name: 'settings',
           component: EmptyModuleView,
           meta: { title: '系统设置' },
+        },
+        {
+          path: 'projects/:id/decisions/:decisionId',
+          name: 'project-decision-detail',
+          component: () => import('@/views/DecisionDetailView.vue'),
+          meta: { title: '决策详情' },
         },
         {
           path: 'projects/:id/recovery',

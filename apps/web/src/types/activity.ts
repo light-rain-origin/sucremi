@@ -9,6 +9,11 @@ export type ProjectActivityType =
   | 'ACTION_CREATED'
   | 'ACTION_COMPLETED'
   | 'ACTION_REOPENED'
+  | 'DECISION_CREATED'
+  | 'DECISION_UPDATED'
+  | 'DECISION_ACCEPTED'
+  | 'DECISION_SUPERSEDED'
+  | 'DECISION_DELETED'
 
 export interface ProjectActivity {
   id: number
