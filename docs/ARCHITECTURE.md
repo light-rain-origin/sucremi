@@ -42,6 +42,9 @@ com.sucremi
 ├─ identity                    当前用户解析（开发期固定身份 / 失败关闭兜底）
 ├─ health.HealthController     健康检查
 ├─ project                     项目模块（controller / service / mapper / dto）
+├─ decision                    项目决策与版本快照模块
+├─ recovery                    上下文恢复聚合（含决策摘要）
+├─ activity                    项目活动事件
 └─ dashboard                   概览统计
 ```
 
@@ -66,8 +69,11 @@ controller / service / mapper / dto，不建立巨型 Controller / Service。
 - 查询在 SQL 层按当前用户过滤；写操作按 `id + user_id` 更新，命中 0 行即返回 404 ——
   **不区分「不存在」与「别人的记录」**，避免泄露资源存在性。
 
-决策背景见 `docs/decisions/0001-identity-and-data-ownership.md`。如此可在不重构既有结构的前提下
-平滑接入真实认证与多用户。
+身份与数据归属背景见 `docs/decisions/0001-identity-and-data-ownership.md`；决策版本与替代规则见
+`docs/decisions/0002-project-decision-history.md`。
+
+决策模块分别维护当前状态和不可变版本快照。决策变更、快照、替代状态与活动事件在同一业务事务中完成；
+上下文恢复只读取最多三条当前有效决策。`version` 用于乐观锁，历史快照使用后状态并以决策内版本号唯一。
 
 ## 配置与密钥
 

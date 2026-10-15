@@ -46,6 +46,16 @@ cd apps/server && ./mvnw spring-boot:run
 `(user_id, created_at, id)` 支持首页最近活动。`event_type` 为稳定枚举，`metadata_version` 标记
 元数据结构版本；`metadata` 仅保存轻量 ID 或状态信息，不重复保存检查点、行动说明等正文。V5 不回填历史事件。
 
+### `project_decision` 与 `project_decision_revision` —— 项目决策（V6）
+
+`project_decision` 保存当前决策状态，包括用户与项目归属、背景、备选方案 JSON、选择与理由、状态、替代关系、
+乐观锁版本和软删除时间。状态为 `PROPOSED`、`ACCEPTED`、`SUPERSEDED`；普通读取排除软删除记录，服务层在
+所有读写中附加当前用户和项目条件。
+
+`project_decision_revision` 保存完整 JSON 快照。版本号在决策内唯一，创建时从 1 开始；实质性变更和快照在同一
+事务提交，历史版本没有修改接口。替代关系经当前用户与项目校验，同一事务内完成新决策创建、旧决策更新、双方
+快照和活动记录。V6 不回填历史决策或活动。
+
 ### `app_user` —— 工作台用户（用户数据隔离锚点）
 
 | 字段 | 类型 | 说明 |

@@ -114,8 +114,9 @@
 
 检查点响应字段为 `id/projectId/summary/currentFocus/blockers/createdAt`；行动响应字段为
 `id/projectId/title/details/status/sortOrder/createdAt/updatedAt/completedAt`。聚合接口返回
-`{ project, latestCheckpoint, actions, recoverySummary }`；没有检查点时 `latestCheckpoint` 与
-`recoverySummary` 为空，行动列表仍可独立使用。
+`{ project, latestCheckpoint, actions, recoverySummary, keyDecisions }`；没有检查点时 `latestCheckpoint` 与
+`recoverySummary` 为空，行动列表仍可独立使用。`keyDecisions` 最多返回三条未删除的已采纳决策，按更新时间
+倒序，理由为截短摘要；没有已采纳决策时为空数组。
 
 ### 项目活动时间线
 
@@ -126,4 +127,24 @@
 响应 `data` 为 `PageResult`，活动包含 `id/projectId/projectName/eventType/metadataVersion/metadata/createdAt`；`metadata` 是 JSON 字符串。
 事件类型包括 `PROJECT_CREATED`、`PROJECT_STATUS_CHANGED`、`PROJECT_ARCHIVED`、`PROJECT_UNARCHIVED`、
 `CHECKPOINT_CREATED`、`ACTION_CREATED`、`ACTION_COMPLETED`、`ACTION_REOPENED`。元数据首版为版本 1，
-仅保存关联记录 ID 或状态变化，不复制检查点、行动说明等正文；历史数据不回填。
+仅保存关联记录 ID 或状态变化，不复制检查点、行动说明或决策正文；历史数据不回填。阶段 2B 新增
+`DECISION_CREATED`、`DECISION_UPDATED`、`DECISION_ACCEPTED`、`DECISION_SUPERSEDED`、`DECISION_DELETED`。
+
+### 项目决策记录
+
+所有接口均限定当前用户及指定项目；越权或不存在资源统一返回 404。列表和历史版本使用
+`PageResult{list,total,page,size}`，页大小上限 100。列表默认已采纳优先，再按更新时间倒序。
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/v1/projects/{projectId}/decisions` | 分页列表；参数 `page`、`size`、`status`、`sortBy`（`updatedAt`/`createdAt`）、`direction`（`asc`/`desc`） |
+| POST | `/api/v1/projects/{projectId}/decisions` | 创建；body 含 `title`、`context`、`options[]`、可选决策字段及 `status` |
+| GET | `/api/v1/projects/{projectId}/decisions/{decisionId}` | 读取详情 |
+| PATCH | `/api/v1/projects/{projectId}/decisions/{decisionId}` | 编辑；body 必须含当前 `expectedVersion`，可附 `changeSummary` |
+| GET | `/api/v1/projects/{projectId}/decisions/{decisionId}/revisions` | 分页读取不可变历史快照 |
+| POST | `/api/v1/projects/{projectId}/decisions/{decisionId}/supersede` | 原子创建已采纳的新决策并替代旧决策；body 含旧决策 `expectedVersion` 和新决策字段 |
+| DELETE | `/api/v1/projects/{projectId}/decisions/{decisionId}` | 软删除提议中的误创建记录 |
+
+状态为 `PROPOSED`、`ACCEPTED`、`SUPERSEDED`。采纳时必须填写 `decision` 与 `rationale`；已采纳决策只能保持
+采纳或通过替代操作结束。版本冲突返回 HTTP 409 / `40900`。新建记录生成版本 1；实质性修改、采纳、替代和
+软删除会在同一事务内更新当前状态、保存快照并写入活动事件。活动只携带决策 ID、短标题及关联 ID。
