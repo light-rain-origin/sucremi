@@ -141,6 +141,10 @@
   --sc-stat-mint-strong: var(--sc-success-strong);
   --sc-stat-slate-soft: rgba(140, 129, 152, 0.14);
   --sc-stat-slate-strong: #6b6277;
+  --sc-status-active: #4D7CF5;
+  --sc-status-paused: #F29A3D;
+  --sc-status-done: #96D64A;
+  --sc-status-archived: #91869f;
 
   /* ==================== ② 角色：项目流程卡配色池 ==================== */
   /* tone-1..4 给「进行中」的项目随机分配，用来在一屏里把不同项目区分开；
@@ -293,6 +297,10 @@ html[data-color-mode='dark'] {
   --sc-border: #494253;
   --sc-border-soft: #403a4c;
   --sc-border-strong: #5a5068;
+  --sc-status-active: #8EAAFF;
+  --sc-status-paused: #FFAD4D;
+  --sc-status-done: #96D64A;
+  --sc-status-archived: #bdb2ca;
   --sc-overlay: rgba(10, 8, 15, 0.62);
   --sc-gradient-soft: linear-gradient(120deg, #352b3d 0%, #302b41 52%, #2a2739 100%);
   --sc-gradient-page: linear-gradient(165deg, #211d2b 0%, #242031 42%, #201e2e 100%);

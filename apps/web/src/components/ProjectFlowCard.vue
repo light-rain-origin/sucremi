@@ -65,7 +65,10 @@ function toneSlot(id: number) {
 function assignPillTones(projects: Project[]): string[] {
   const taken = new Set<number>()
   return projects.map((project) => {
-    const reserved = RESERVED_PILL_TONES[project.status]
+    const useProjectPalette =
+      project.status === 'ACTIVE' ||
+      (selectedTab.value === 'completed' && project.status === 'DONE')
+    const reserved = useProjectPalette ? undefined : RESERVED_PILL_TONES[project.status]
     if (reserved) return reserved
     let slot = toneSlot(project.id)
     while (taken.has(slot)) slot = (slot + 1) % ACTIVE_TONE_SLOTS

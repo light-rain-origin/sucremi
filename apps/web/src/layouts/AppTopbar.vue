@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import SkinSwitcher from '@/components/SkinSwitcher.vue'
@@ -7,7 +7,15 @@ import SkinSwitcher from '@/components/SkinSwitcher.vue'
 defineEmits<{ toggle: [] }>()
 
 const route = useRoute()
-const title = computed(() => (route.path === '/' ? '首页概览' : (route.meta.title as string) || 'Sucremi'))
+const title = computed(() => {
+  if (route.path === '/') return '首页概览'
+  if (route.path === '/projects') return '项目管理'
+  return (route.meta.title as string) || 'Sucremi'
+})
+const titleTransition = ref('page-title-up')
+watch(() => route.path, (path) => {
+  titleTransition.value = path === '/' ? 'page-title-down' : 'page-title-up'
+})
 type ColorMode = 'light' | 'dark'
 const COLOR_MODE_KEY = 'sucremi.color-mode'
 
@@ -45,7 +53,11 @@ function toggleColorMode() {
       <button class="menu-toggle" aria-label="菜单" @click="$emit('toggle')">
         <AppIcon name="menu" :size="20" />
       </button>
-      <h1 class="page-title">{{ title }}</h1>
+      <h1 class="page-title">
+        <Transition :name="titleTransition">
+          <span :key="title" class="page-title-text">{{ title }}</span>
+        </Transition>
+      </h1>
     </div>
 
     <div class="search-display" role="search" aria-label="搜索项目、任务、记录、资料、待办">
@@ -122,14 +134,58 @@ function toggleColorMode() {
 }
 
 .page-title {
+  position: relative;
+  width: 5em;
+  height: 1.2em;
   overflow: hidden;
   margin: 0;
   color: var(--sc-page-title-color);
   font-size: 20px;
   font-weight: 600;
   letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.page-title-text {
+  position: absolute;
+  inset: 0 auto auto 0;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.page-title-up-enter-active,
+.page-title-up-leave-active,
+.page-title-down-enter-active,
+.page-title-down-leave-active {
+  transition: transform 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.page-title-up-enter-from {
+  transform: translateY(120%);
+}
+
+.page-title-up-leave-to {
+  transform: translateY(-120%);
+}
+
+.page-title-down-enter-from {
+  transform: translateY(-120%);
+}
+
+.page-title-down-leave-to {
+  transform: translateY(120%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-title-up-enter-active,
+  .page-title-up-leave-active,
+  .page-title-down-enter-active,
+  .page-title-down-leave-active {
+    transition-duration: 1ms;
+  }
 }
 
 .search-display {
