@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, ref } from 'vue'
 import type { Project, ProjectStatus } from '@/types/project'
 import type { ProjectFlowSummary } from '@/types/dashboard'
 import { formatDateTime } from '@/utils/datetime'
@@ -28,7 +28,6 @@ const RESERVED_PILL_TONES: Partial<Record<ProjectStatus, string>> = {
 }
 
 const selectedTab = ref<ProjectTab>('ongoing')
-const markerPrefix = useId().replace(/:/g, '')
 const tabs: { id: ProjectTab; label: string }[] = [
   { id: 'unfinished', label: '未完成' },
   { id: 'ongoing', label: '进行中' },
@@ -98,48 +97,50 @@ const displayProjects = computed(() => {
   }))
 })
 
-/** 一根连线的几何：起点钉在胶囊右缘，终点钉在三根线的合并点。 */
-const LINE_START_X = 286
-const JUNCTION = { x: 365, y: 90 }
+/** 最近更新稿中的连接线坐标，以 606px × 180px 画布为基准。 */
+const LINE_START_X = 292.95
+const JUNCTION = { x: 331.34, y: 90 }
+const MIDDLE_END_X = 373.77
+const SUMMARY_START_X = 373.236
+const SUMMARY_END_X = 454.051
 
-/** S 形连线的控制点水平跨度。这个值越大，两端越平、中段越陡 —— 它决定 S 有多明显。
-    通道总宽只有 79px（286 → 365），跨度过 39px 时两个控制点会互相越过，
-    曲线中段出现回折，所以 36 已经接近这条通道能做出的最陡的 S：
-    两端各留 36px 水平段，中段被压到约 52°。 */
-const S_SPAN = 36
-
-/** 线上的箭头三角形：尖端在原点、朝 +x，长 7 高 7。
-    中点处那个靠 translate + rotate 摆到切线上，合并处那个只做 translate ——
-    两处共用同一个 d，"大小一致"就是结构上保证的，不靠人眼对齐。 */
-const ARROW_D = 'M-7 -3.5L0 0L-7 3.5Z'
-
-/** 连线跟随胶囊配色：同一根线用同一个 tone，颜色本身就说明「这根线属于哪个项目」。
-    两个控制点分别与起点、终点同高，两端切线因此水平 —— 这是 S 弧度的来源。
-    中点和切线在三阶贝塞尔的 t = 0.5 处解析求出，改控制点时线上的箭头会跟着走，
-    不会和线脱节。 */
+/** 连线复用最近更新稿的弯曲走向，顶 / 底项目汇入同一点，中间项目沿水平线继续流动。 */
 const connectorPaths = computed(() =>
   displayProjects.value.map(({ project, center, tone }) => {
-    const c1 = { x: LINE_START_X + S_SPAN, y: center }
-    const c2 = { x: JUNCTION.x - S_SPAN, y: JUNCTION.y }
-    const mid = {
-      x: (LINE_START_X + 3 * c1.x + 3 * c2.x + JUNCTION.x) / 8,
-      y: (center + 3 * c1.y + 3 * c2.y + JUNCTION.y) / 8,
+    const delta = center - JUNCTION.y
+    const direction = Math.sign(delta)
+    const scale = Math.min(1, Math.abs(delta) / 59)
+
+    if (direction === 0) {
+      return {
+        id: project.id,
+        tone,
+        path: `M${LINE_START_X} 90 C329.78 90 336.94 90 ${MIDDLE_END_X} 90`,
+        arrow: null,
+      }
     }
-    // t = 0.5 处的切线方向 = 3/4 · (P3 + P2 − P1 − P0)
-    const dx = 0.75 * (JUNCTION.x + c2.x - c1.x - LINE_START_X)
-    const dy = 0.75 * (JUNCTION.y + c2.y - c1.y - center)
+
+    const bend = direction * scale
+    const arrow = {
+      d: `M${LINE_START_X + 15.175} ${center - 27.194 * bend}` +
+        `L${LINE_START_X + 18.835} ${center - 33.976 * bend}` +
+        `L${LINE_START_X + 22.131} ${center - 26.95 * bend}Z`,
+    }
 
     return {
       id: project.id,
       tone,
-      path: `M${LINE_START_X} ${center} C${c1.x} ${c1.y} ${c2.x} ${c2.y} ${JUNCTION.x} ${JUNCTION.y}`,
-      arrow: {
-        x: mid.x,
-        y: mid.y,
-        angle: Math.round((Math.atan2(dy, dx) * 180) / Math.PI),
-      },
+      path:
+        `M${LINE_START_X} ${center}` +
+        `C324.543 ${center} 301.518 ${center - 46.288 * bend} 320.626 ${center - 56.865 * bend}` +
+        `C323.09 ${JUNCTION.y + 0.77 * direction} 327.267 ${JUNCTION.y} ${JUNCTION.x} ${JUNCTION.y}`,
+      arrow,
     }
   }),
+)
+
+const connectorSummaryStart = computed(() =>
+  connectorPaths.value.some((path) => path.arrow === null) ? SUMMARY_START_X : JUNCTION.x,
 )
 
 const moreLabel = computed(() => {
@@ -152,10 +153,10 @@ const moreLabel = computed(() => {
 </script>
 
 <template>
-  <section class="project-flow-card" aria-label="项目进度">
+  <section class="project-flow-card" aria-label="最近更新">
     <header class="card-header">
       <div class="heading">
-        <h2>项目</h2>
+        <h2>最近更新</h2>
         <span class="subheading">状态与整体进度</span>
       </div>
       <div class="tabs" role="tablist" aria-label="项目状态筛选">
@@ -177,43 +178,25 @@ const moreLabel = computed(() => {
 
     <div class="flow-canvas" :class="{ 'is-empty': !displayProjects.length }">
       <template v-if="displayProjects.length">
-        <svg class="connectors" viewBox="0 0 620 180" preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <marker :id="`${markerPrefix}-arrow-down`" markerWidth="7" markerHeight="7" refX="3.5" refY="6" orient="auto">
-              <path d="M0 0L7 0L3.5 7z" fill="var(--sc-brand-strong)" />
-            </marker>
-          </defs>
-          <path
-            v-for="path in connectorPaths"
-            :key="path.id"
-            class="connector-line"
-            :class="path.tone"
-            :d="path.path"
-          />
-          <!-- 每根线在中点各带一个箭头，指着自己的去向；和合并处那个是同一个三角形 -->
-          <path
-            v-for="path in connectorPaths"
-            :key="`arrow-${path.id}`"
-            class="connector-arrow"
-            :class="path.tone"
-            :d="ARROW_D"
-            :transform="`translate(${path.arrow.x} ${path.arrow.y}) rotate(${path.arrow.angle})`"
-          />
-          <!-- 合并之后的干线：从合并箭头的尖端起步，本身不再带箭头 ——
-               箭头只留合并处那一个，避免同一根线上出现两个箭头。
-               右端伸到 440：干线在 y = 90 这条水平线上，而「平均进度」是胶囊，
-               它左端的圆角在中线处比矩形框更靠右，画到 431 会差出约 3px 的空隙；
-               440 让干线压进节点底下几个像素，衔接处不留缝，多出来的部分被
-               节点的不透明底色盖住（节点在 DOM 里排在 svg 之后）。 -->
-          <path class="connector-line connector-summary" d="M365 90H440" />
+        <svg class="connectors" viewBox="0 0 606.11 180" preserveAspectRatio="none" aria-hidden="true">
+          <template v-for="path in connectorPaths" :key="path.id">
+            <path class="connector-line" :class="path.tone" :d="path.path" />
+            <path
+              v-if="path.arrow"
+              class="connector-arrow"
+              :class="path.tone"
+              :d="path.arrow.d"
+            />
+          </template>
+          <!-- 汇合后的品牌色主线，接到平均进度节点下方。 -->
+          <path class="connector-line connector-summary" :d="`M${connectorSummaryStart} 90H${SUMMARY_END_X}`" />
           <path
             class="connector-line connector-summary"
-            d="M493 109V130"
-            :marker-end="`url(#${markerPrefix}-arrow-down)`"
+            d="M485.906 106V146"
           />
-          <!-- 合并点：三根彩色连线在 (365, 90) 汇聚，箭头尖端就落在这个点上，
-               所以读作「汇到这里 → 继续往右」，而不是汇完再往前一段才出现箭头 -->
-          <path class="junction-arrow" :d="ARROW_D" transform="translate(365 90)" />
+          <path class="junction-arrow" d="M328.176 86.534L335.111 90L328.176 93.466Z" />
+          <path class="connector-arrow connector-summary-arrow" d="M371.351 86.534L378.286 90L371.351 93.466Z" />
+          <path class="connector-arrow" d="M485.967 123.86L482.467 117L489.467 117Z" />
         </svg>
 
         <button
@@ -271,17 +254,13 @@ const moreLabel = computed(() => {
 
 <style scoped>
 .project-flow-card {
-  width: min(100%, 668px);
-  padding: 20px 28px 18px;
+  width: min(100%, 666.72px);
+  height: 315px;
+  padding: 14px 30px 18px;
   overflow: hidden;
   border: 1px solid var(--sc-border-soft);
   border-radius: var(--sc-radius-xl);
-  /* 卡片是一块抬起来的浅色面板：右上角一片白光，底下垫一层很淡的粉紫，避免大块纯白
-     在粉紫页面里发灰。原先整张卡用的是 --sc-gradient-soft，和页面底色几乎是同一个
-     值，卡片就糊进背景里了；页面越花，越需要卡片自己「亮一层、抬一层」。 */
-  background:
-    radial-gradient(ellipse at 92% -6%, rgba(255, 255, 255, 0.97), transparent 54%),
-    linear-gradient(150deg, var(--sc-panel-strong) 0%, var(--sc-brand-soft) 118%);
+  background: #fffdfe;
   box-shadow: var(--sc-shadow-md);
   color: var(--sc-text);
   font-family: var(--sc-font);
@@ -357,16 +336,17 @@ const moreLabel = computed(() => {
 
 .flow-canvas {
   position: relative;
-  height: 180px;
-  border: 1px solid var(--sc-border-soft);
-  border-radius: var(--sc-radius-md);
-  background-color: var(--sc-panel-faint);
+  height: 182px;
+  flex: 0 0 182px;
+  border: 1.2px solid #eee3f4;
+  border-radius: 15px;
+  background-color: #fffdfe;
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0,
-    transparent 33px,
-    var(--sc-border-soft) 34px,
-    transparent 35px
+    transparent calc(36.2px - 1.2px),
+    #eee3f4 calc(36.2px - 1.2px),
+    #eee3f4 36.2px
   );
 }
 
@@ -392,19 +372,23 @@ const moreLabel = computed(() => {
 
 /* 合并点的箭头：与主线同色系，读作「三根线汇成一根，继续往右」 */
 .junction-arrow {
+  fill: #a8cd6e;
+}
+
+.connector-summary-arrow {
   fill: var(--sc-brand-strong);
 }
 
 .project-pill {
   position: absolute;
   top: var(--row-top);
-  left: 0;
+  left: 10.1px;
   display: flex;
-  width: 47%;
+  width: 46.67%;
   height: 42px;
   flex-direction: column;
   justify-content: center;
-  padding: 0 48px 0 22px;
+  padding: 0 48px 0 12.1px;
   border: 1px solid rgba(255, 255, 255, 0.86);
   border-radius: var(--sc-radius-pill);
   /* 底色来自 tone-* 声明的 --tone（见下），与自己的连线、线上箭头同色 */
@@ -685,6 +669,8 @@ const moreLabel = computed(() => {
 
 @media (max-width: 560px) {
   .project-flow-card {
+    height: auto;
+    min-height: 315px;
     padding: 18px 16px 16px;
   }
 

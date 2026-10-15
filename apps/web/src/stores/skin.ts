@@ -10,7 +10,6 @@ import { ref } from 'vue'
  */
 export const SKINS = [
   { id: 'classic', label: '经典粉紫', hint: '默认皮肤' },
-  { id: 'remi-macaron', label: 'Remi 马卡龙', hint: '抹茶绿 · 紧凑' },
 ] as const
 
 export type SkinId = (typeof SKINS)[number]['id']
@@ -23,14 +22,16 @@ export function isSkinId(value: unknown): value is SkinId {
   return SKINS.some((s) => s.id === value)
 }
 
-/** 非默认皮肤按需下载：只有用户真的选了才加载对应样式表。 */
-const loaders: Partial<Record<SkinId, () => Promise<unknown>>> = {
-  'remi-macaron': () => import('@/styles/skins/remi-macaron.css'),
-}
+/** 非默认皮肤按需下载：新增皮肤时在这里注册对应样式表。 */
+const loaders: Partial<Record<SkinId, () => Promise<unknown>>> = {}
 
 function readStored(): SkinId {
   try {
     const value = window.localStorage.getItem(SKIN_STORAGE_KEY)
+    if (value === 'remi-macaron') {
+      window.localStorage.removeItem(SKIN_STORAGE_KEY)
+      return DEFAULT_SKIN
+    }
     return isSkinId(value) ? value : DEFAULT_SKIN
   } catch {
     // 隐私模式 / 禁用存储：当作没存过，回落默认皮肤
@@ -73,8 +74,7 @@ export const useSkinStore = defineStore('skin', () => {
   /**
    * 启动时恢复已保存的皮肤，只落属性、不写存储 ——
    * 存储里的值本身就是它要恢复的内容，回写没有意义。
-   * 样式表取不回来（离线 / 产物 chunk 失效）时回落默认皮肤，
-   * 免得切换器显示「Remi 马卡龙」而界面其实是经典粉紫。
+   * 样式表取不回来（离线 / 产物 chunk 失效）时回落默认皮肤。
    */
   async function restore() {
     try {

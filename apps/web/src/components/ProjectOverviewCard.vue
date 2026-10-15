@@ -3,12 +3,13 @@ import { computed, ref } from 'vue'
 import type { Project, ProjectStatus } from '@/types/project'
 import { formatDateTime } from '@/utils/datetime'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
+  title?: string
   projects: Project[]
   activeCount: number
   pausedCount: number
   doneCount: number
-}>()
+}>(), { title: '项目进度' })
 
 const emit = defineEmits<{ open: [id: number] }>()
 
@@ -34,7 +35,7 @@ const counts = computed<Record<ProjectStatus, number>>(() => ({
       <div class="card-head">
         <div class="heading">
           <span class="eyebrow">PROJECTS</span>
-          <h2>项目进度</h2>
+          <h2>{{ title }}</h2>
         </div>
         <nav class="tabs" aria-label="项目状态">
           <button

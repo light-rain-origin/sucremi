@@ -23,13 +23,17 @@ withDefaults(defineProps<{ label: string; value: number | string; icon: IconName
 
 <style scoped>
 .stat-card {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 18px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 13px;
+  row-gap: 2px;
+  min-height: 94px;
+  padding: 15px 17px;
   border-radius: var(--sc-radius-xl);
   border: 1px solid var(--sc-border-soft);
-  background: var(--sc-panel);
+  background: linear-gradient(125deg, var(--tone-soft), var(--sc-panel-strong) 66%);
   box-shadow: var(--sc-shadow-sm);
   transition:
     box-shadow 0.2s ease,
@@ -42,26 +46,28 @@ withDefaults(defineProps<{ label: string; value: number | string; icon: IconName
 }
 
 .stat-icon {
-  display: inline-flex;
+  display: grid;
+  grid-row: 1 / 3;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  margin-bottom: 10px;
-  border-radius: var(--sc-radius-md);
+  width: 48px;
+  height: 48px;
+  border-radius: 17px;
   background: var(--tone-soft);
   color: var(--tone-strong);
 }
 
 .stat-value {
-  font-size: var(--sc-font-size-5xl);
+  align-self: end;
+  color: var(--sc-text);
+  font-size: 26px;
   font-weight: 700;
   line-height: 1.15;
-  color: var(--tone-strong);
   font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
+  align-self: start;
   font-size: var(--sc-font-size-md);
   color: var(--sc-text-secondary);
 }

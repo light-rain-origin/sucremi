@@ -4,10 +4,7 @@ import { ElMessage } from 'element-plus'
 import { SKINS, useSkinStore } from '@/stores/skin'
 import AppIcon from '@/components/AppIcon.vue'
 
-/**
- * 皮肤切换入口。放在页头右侧，不新增路由 —— 两个选项不值得一层设置页。
- * 只切换样式：不触发任何请求，也不影响页面结构与数据。
- */
+/** 皮肤切换入口。只切换样式：不触发任何请求，也不影响页面结构与数据。 */
 const skin = useSkinStore()
 
 const currentLabel = computed(() => SKINS.find((s) => s.id === skin.current)?.label ?? '皮肤')
@@ -94,10 +91,6 @@ async function onCommand(command: unknown) {
 
 .swatch-classic {
   background: var(--sc-swatch-classic);
-}
-
-.swatch-remi-macaron {
-  background: var(--sc-swatch-remi-macaron);
 }
 
 .skin-name {

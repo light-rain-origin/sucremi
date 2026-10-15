@@ -83,12 +83,15 @@ describe('DashboardView', () => {
     for (const label of ['全部项目', '进行中', '已暂停', '已完成', '已归档']) {
       expect(text).toContain(label)
     }
+    expect(text).toContain('Hello，欢迎回来！')
     expect(text).toContain('4')
     expect(text).toContain('3')
     expect(text).toContain('最近项目')
     expect(text).toContain('项目状态与整体进度')
     expect(text).toContain('今日继续')
     expect(text).toContain('继续这个项目')
+    expect(text).toContain('最近更新')
+    expect(text).toContain('快捷入口')
     expect(text).toContain('20%')
   })
 

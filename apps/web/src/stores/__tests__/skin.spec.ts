@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { DEFAULT_SKIN, SKIN_STORAGE_KEY, isSkinId, useSkinStore } from '../skin'
+import { DEFAULT_SKIN, SKIN_STORAGE_KEY, SKINS, isSkinId, useSkinStore } from '../skin'
 
 function currentAttr() {
   return document.documentElement.dataset.skin
@@ -24,24 +24,26 @@ describe('useSkinStore', () => {
     expect(window.localStorage.getItem(SKIN_STORAGE_KEY)).toBeNull()
   })
 
-  it('切换皮肤会落 data-skin 并记住选择', async () => {
+  it('当前皮肤列表保留 classic 默认项', async () => {
+    expect(SKINS.map((skin) => skin.id)).toEqual(['classic'])
     const store = useSkinStore()
 
-    await store.apply('remi-macaron')
+    await store.apply('classic')
 
-    expect(store.current).toBe('remi-macaron')
-    expect(currentAttr()).toBe('remi-macaron')
-    expect(window.localStorage.getItem(SKIN_STORAGE_KEY)).toBe('remi-macaron')
+    expect(store.current).toBe(DEFAULT_SKIN)
+    expect(currentAttr()).toBeUndefined()
+    expect(window.localStorage.getItem(SKIN_STORAGE_KEY)).toBeNull()
   })
 
-  it('启动时恢复已保存的皮肤', async () => {
+  it('旧版马卡龙记录会清除并回落到经典皮肤', async () => {
     window.localStorage.setItem(SKIN_STORAGE_KEY, 'remi-macaron')
     const store = useSkinStore()
-    expect(store.current).toBe('remi-macaron')
+    expect(store.current).toBe(DEFAULT_SKIN)
+    expect(window.localStorage.getItem(SKIN_STORAGE_KEY)).toBeNull()
 
     await store.restore()
 
-    expect(currentAttr()).toBe('remi-macaron')
+    expect(currentAttr()).toBe('classic')
   })
 
   it('存储里是非法值时回落默认皮肤', () => {
@@ -55,6 +57,7 @@ describe('useSkinStore', () => {
     await store.apply('remi')
     await store.apply(null)
     await store.apply({ id: 'remi-macaron' })
+    await store.apply('remi-macaron')
 
     expect(store.current).toBe(DEFAULT_SKIN)
     expect(currentAttr()).toBeUndefined()
@@ -73,12 +76,12 @@ describe('useSkinStore', () => {
 
     await store.apply('remi-macaron')
 
-    expect(currentAttr()).toBe('remi-macaron')
+    expect(currentAttr()).toBeUndefined()
   })
 
   it('isSkinId 只认清单里的 id', () => {
     expect(isSkinId('classic')).toBe(true)
-    expect(isSkinId('remi-macaron')).toBe(true)
+    expect(isSkinId('remi-macaron')).toBe(false)
     expect(isSkinId('Remi-Macaron')).toBe(false)
     expect(isSkinId(undefined)).toBe(false)
   })

@@ -47,6 +47,10 @@
   --sc-panel-faint: rgba(255, 252, 254, 0.55);
   --sc-bg-muted: #f7f0f9;
   --sc-sidebar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, var(--sc-panel) 100%);
+  /* 侧栏左下角溢出的柔光（元素自带高斯模糊，所以这里只给颜色与透明度） */
+  --sc-sidebar-glow-primary: rgba(255, 216, 236, 0.42);
+  --sc-sidebar-glow-secondary: rgba(226, 216, 255, 0.46);
+  --sc-sidebar-star-dot: rgba(206, 177, 242, 0.5);
   --sc-text: #383044;
   --sc-text-secondary: #8c8198;
   --sc-text-placeholder: #b4aabf;
@@ -71,17 +75,22 @@
   --sc-gradient-soft: linear-gradient(120deg, #fff1f8 0%, #fbf2ff 52%, #f2ecff 100%);
   --sc-gradient-page: linear-gradient(165deg, #fff6fb 0%, #fdf4fb 42%, #f6f0ff 100%);
   /* 侧栏选中项底色 */
-  --sc-nav-active-bg: linear-gradient(100deg, var(--sc-pink-soft) 0%, var(--sc-purple-soft) 100%);
+  --sc-nav-active-bg: linear-gradient(100deg, #fbe3f2 0%, #e8e2ff 50%, #f7e7ff 100%);
+  /* 侧栏导航条目：图标底盘 / 图标本身 / 选中底盘 / 悬停底 / 选中强调条 */
+  --sc-nav-icon: var(--sc-brand-alt);
+  --sc-nav-icon-bg: var(--sc-brand-alt-soft);
+  --sc-nav-icon-bg-active: var(--sc-brand-on);
+  --sc-nav-hover-bg: rgba(255, 255, 255, 0.62);
+  /* 导航胶囊圆角：设计稿是 15，比 --sc-radius-lg 更收一点，单独开一个槽位 */
+  --sc-nav-radius: 15px;
+  /*
+   * 选中强调条：由品牌 token 混合派生，不写死粉色，新增皮肤也能自动得到同色系强调条。
+   */
+  --sc-nav-accent: color-mix(in srgb, var(--sc-brand) 62%, var(--sc-brand-strong));
   /* 欢迎面板右上角的柔光 */
   --sc-hero-glow: radial-gradient(circle, rgba(245, 168, 203, 0.42), transparent 68%);
-  /*
-   * 页面氛围：整条 `background` 简写的值（含每层的尺寸与平铺方式），
-   * 皮肤可以换成任意多层叠加，AppLayout 只负责 `background: var(--sc-backdrop)`。
-   */
-  --sc-backdrop:
-    radial-gradient(1100px 520px at 4% -10%, rgba(245, 168, 203, 0.32), transparent 62%),
-    radial-gradient(900px 500px at 100% 2%, rgba(155, 134, 248, 0.22), transparent 60%),
-    var(--sc-gradient-page);
+  /* 页面共用底图与 public/exports/统一背景.html 中的 SVG 渐变一致。 */
+  --sc-backdrop: linear-gradient(135deg, #fff4fa 0%, #f8f3ff 52%, #fffafd 100%);
   /*
    * 角色插画装饰位（默认关闭）。
    * 素材到位后由皮肤同时给出 --sc-character-image 与 --sc-character-height 才会显示；
@@ -91,13 +100,10 @@
   --sc-character-height: 0px;
 
   /*
-   * 皮肤切换器里的色板预览：它必须显示「另一套皮肤」的颜色，
-   * 因此不能引用当前皮肤的品牌 token（那样两块色板会一样），只能在这里写死。
-   * 新增皮肤时同步加一条。
+   * 皮肤切换器里的经典色板预览：当前只有经典皮肤时保留这项，新增皮肤时再补对应色板。
    */
   --sc-swatch-classic: linear-gradient(120deg, #f7a8cc 0%, #b79cf9 100%);
-  --sc-swatch-remi-macaron: linear-gradient(120deg, #7ecb9c 0%, #5fbfa8 100%);
-  /* 色板预览描边：中性发丝线，对两套皮肤都成立，因此不随皮肤变化 */
+  /* 色板预览描边：中性发丝线 */
   --sc-swatch-ring: rgba(0, 0, 0, 0.06);
 
   /* ==================== ② 角色：统计卡色调 ==================== */
@@ -253,7 +259,7 @@ body,
 
 body {
   margin: 0;
-  background: var(--sc-bg);
+  background: var(--sc-backdrop);
   color: var(--sc-text);
   font-family: var(--sc-font);
   font-size: var(--sc-font-size-lg);
