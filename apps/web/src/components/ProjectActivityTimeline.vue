@@ -24,6 +24,11 @@ const eventLabels: Record<ProjectActivityType, string> = {
   ACTION_CREATED: '添加了下一步行动',
   ACTION_COMPLETED: '完成了下一步行动',
   ACTION_REOPENED: '重新打开了下一步行动',
+  DECISION_CREATED: '记录了新决策',
+  DECISION_UPDATED: '更新了决策',
+  DECISION_ACCEPTED: '采纳了决策',
+  DECISION_SUPERSEDED: '替代了旧决策',
+  DECISION_DELETED: '删除了决策草稿',
 }
 
 const filterOptions: Array<{ label: string; value: ProjectActivityType | '' }> = [
@@ -36,6 +41,11 @@ const filterOptions: Array<{ label: string; value: ProjectActivityType | '' }> =
   { label: '行动', value: 'ACTION_CREATED' },
   { label: '行动完成', value: 'ACTION_COMPLETED' },
   { label: '重新打开行动', value: 'ACTION_REOPENED' },
+  { label: '决策创建', value: 'DECISION_CREATED' },
+  { label: '决策更新', value: 'DECISION_UPDATED' },
+  { label: '决策采纳', value: 'DECISION_ACCEPTED' },
+  { label: '决策替代', value: 'DECISION_SUPERSEDED' },
+  { label: '决策删除', value: 'DECISION_DELETED' },
 ]
 
 function eventLabel(event: ProjectActivity) {
@@ -48,6 +58,14 @@ function eventLabel(event: ProjectActivity) {
       }
     } catch {
       // 元数据不可解析时显示通用事件说明。
+    }
+  }
+  if (event.eventType.startsWith('DECISION_')) {
+    try {
+      const metadata = JSON.parse(event.metadata) as { title?: string }
+      if (metadata.title) return `${eventLabels[event.eventType]}「${metadata.title}」`
+    } catch {
+      // 无法解析的历史元数据仍显示通用事件说明。
     }
   }
   return eventLabels[event.eventType] ?? '更新了项目'

@@ -214,6 +214,20 @@ function buildLocalSummary(data: ProjectRecovery) {
         <span class="project-progress">当前进度 {{ recovery.project.progress }}%</span>
       </header>
 
+      <section class="surface key-decisions" aria-labelledby="key-decisions-title">
+        <div class="section-heading">
+          <span class="section-icon decision-icon" aria-hidden="true">✧</span>
+          <div><h2 id="key-decisions-title">关键决策</h2><p>快速回想项目中的重要技术选择。</p></div>
+          <RouterLink class="all-decisions" :to="`/projects/${projectId}#decision-records`">查看全部决策 →</RouterLink>
+        </div>
+        <div v-if="recovery.keyDecisions.length" class="key-decision-list">
+          <RouterLink v-for="item in recovery.keyDecisions" :key="item.id" class="key-decision" :to="`/projects/${projectId}/decisions/${item.id}`">
+            <strong>{{ item.title }}</strong><span>{{ item.decision }}</span><small v-if="item.rationaleSummary">理由：{{ item.rationaleSummary }}</small>
+          </RouterLink>
+        </div>
+        <p v-else class="no-key-decisions">还没有已采纳的决策记录。</p>
+      </section>
+
       <section v-if="recovery.latestCheckpoint" class="surface summary-panel" aria-labelledby="recovery-summary-title">
         <div class="section-heading">
           <span class="section-icon checkpoint-icon" aria-hidden="true">✦</span>
@@ -429,6 +443,15 @@ function buildLocalSummary(data: ProjectRecovery) {
 .section-heading > div:last-child {
   flex: 1;
 }
+
+.decision-icon { color: var(--sc-brand-alt-strong); }
+.all-decisions { margin-left: auto; color: var(--sc-brand-alt-strong); font-size: var(--sc-font-size-sm); }
+.key-decision-list { display: grid; gap: 9px; margin-top: 15px; }
+.key-decision { display: grid; gap: 5px; padding: 13px 15px; border: 1px solid var(--sc-border-soft); border-radius: 14px; color: var(--sc-text); text-decoration: none; }
+.key-decision:hover { border-color: var(--sc-brand-alt); }
+.key-decision span { line-height: 1.55; }
+.key-decision small,.no-key-decisions { color: var(--sc-text-secondary); }
+.no-key-decisions { margin: 15px 0 0; }
 
 .checkpoint-delete {
   margin-left: auto;

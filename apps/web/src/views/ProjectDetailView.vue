@@ -9,6 +9,7 @@ import ProgressBar from '@/components/ProgressBar.vue'
 import ProjectFormDialog from '@/components/ProjectFormDialog.vue'
 import { formatDateTime } from '@/utils/datetime'
 import ProjectActivityTimeline from '@/components/ProjectActivityTimeline.vue'
+import DecisionList from '@/components/decision/DecisionList.vue'
 
 const route = useRoute()
 const id = route.params.id as string
@@ -126,9 +127,8 @@ async function toggleArchive() {
           <div class="future-title">项目活动时间线</div>
           <ProjectActivityTimeline :project-id="project.id" />
         </el-card>
-        <el-card shadow="never" class="future-card">
-          <div class="future-title">决策记录 & 知识资料</div>
-          <div class="future-hint">即将推出</div>
+        <el-card id="decision-records" shadow="never" class="future-card decision-card">
+          <DecisionList :project-id="project.id" />
         </el-card>
       </div>
     </template>
@@ -214,6 +214,7 @@ async function toggleArchive() {
   border-style: dashed;
 }
 .activity-card { grid-column: 1 / -1; border-style: solid; }
+.decision-card { grid-column: 1 / -1; border-style: solid; }
 .recovery-card {
   border-style: solid;
   border-color: color-mix(in srgb, var(--sc-brand-alt) 38%, var(--sc-border-soft));
