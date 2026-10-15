@@ -260,7 +260,7 @@ const moreLabel = computed(() => {
   overflow: hidden;
   border: 1px solid var(--sc-border-soft);
   border-radius: var(--sc-radius-xl);
-  background: #fffdfe;
+  background: var(--sc-card-surface);
   box-shadow: var(--sc-shadow-md);
   color: var(--sc-text);
   font-family: var(--sc-font);
@@ -338,15 +338,15 @@ const moreLabel = computed(() => {
   position: relative;
   height: 182px;
   flex: 0 0 182px;
-  border: 1.2px solid #eee3f4;
+  border: 1.2px solid var(--sc-flow-grid-line);
   border-radius: 15px;
-  background-color: #fffdfe;
+  background-color: var(--sc-card-surface);
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0,
     transparent calc(36.2px - 1.2px),
-    #eee3f4 calc(36.2px - 1.2px),
-    #eee3f4 36.2px
+    var(--sc-flow-grid-line) calc(36.2px - 1.2px),
+    var(--sc-flow-grid-line) 36.2px
   );
 }
 
@@ -481,8 +481,8 @@ const moreLabel = computed(() => {
   place-items: center;
   border: 2px solid var(--sc-brand-strong);
   border-radius: var(--sc-radius-pill);
-  background: var(--sc-text);
-  color: #fff;
+  background: var(--sc-flow-summary-bg);
+  color: var(--sc-flow-summary-text);
   font-size: var(--sc-font-size-md);
   font-weight: 600;
   white-space: nowrap;

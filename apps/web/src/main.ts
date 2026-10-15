@@ -8,6 +8,15 @@ import App from './App.vue'
 import router from './router'
 import { useSkinStore } from './stores/skin'
 
+try {
+  if (window.localStorage.getItem('sucremi.color-mode') === 'dark') {
+    document.documentElement.dataset.colorMode = 'dark'
+    document.documentElement.style.colorScheme = 'dark'
+  }
+} catch {
+  // Storage may be unavailable; the app starts in its default light mode.
+}
+
 const app = createApp(App)
 
 app.use(createPinia())

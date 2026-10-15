@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import SkinSwitcher from '@/components/SkinSwitcher.vue'
@@ -8,6 +8,35 @@ defineEmits<{ toggle: [] }>()
 
 const route = useRoute()
 const title = computed(() => (route.path === '/' ? '首页概览' : (route.meta.title as string) || 'Sucremi'))
+type ColorMode = 'light' | 'dark'
+const COLOR_MODE_KEY = 'sucremi.color-mode'
+
+function readColorMode(): ColorMode {
+  try {
+    return window.localStorage.getItem(COLOR_MODE_KEY) === 'dark' ? 'dark' : 'light'
+  } catch {
+    return 'light'
+  }
+}
+
+const colorMode = ref<ColorMode>(readColorMode())
+
+function applyColorMode() {
+  document.documentElement.dataset.colorMode = colorMode.value
+  document.documentElement.style.colorScheme = colorMode.value
+}
+
+applyColorMode()
+
+function toggleColorMode() {
+  colorMode.value = colorMode.value === 'light' ? 'dark' : 'light'
+  applyColorMode()
+  try {
+    window.localStorage.setItem(COLOR_MODE_KEY, colorMode.value)
+  } catch {
+    // 本次会话仍可切换；存储不可用时刷新后回到浅色。
+  }
+}
 </script>
 
 <template>
@@ -31,10 +60,25 @@ const title = computed(() => (route.path === '/' ? '首页概览' : (route.meta.
     <div class="navigation-actions">
       <button class="icon-action notification-action" type="button" aria-label="通知">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-          <path d="M9.5 21h5" />
+          <path d="M12 3a6 6 0 0 0-6 6c0 4.7-1.55 6.45-2.73 7.74A1.3 1.3 0 0 0 4.23 19h15.54a1.3 1.3 0 0 0 .96-2.26C19.55 15.45 18 13.7 18 9a6 6 0 0 0-6-6Z" />
+          <path d="M9.6 20a2.55 2.55 0 0 0 4.8 0Z" />
         </svg>
         <i aria-hidden="true" />
+      </button>
+      <button
+        class="icon-action color-mode-action"
+        type="button"
+        :aria-label="colorMode === 'light' ? '切换到深色模式' : '切换到浅色模式'"
+        :title="colorMode === 'light' ? '深色模式' : '浅色模式'"
+        @click="toggleColorMode"
+      >
+        <svg v-if="colorMode === 'light'" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.1" />
+          <path d="M11 1.8h2v3.4h-2zM11 18.8h2v3.4h-2zM18.8 11h3.4v2h-3.4zM1.8 11h3.4v2H1.8zM17.66 4.93l1.41 1.41-2.4 2.4-1.41-1.41zM7.34 15.25l1.41 1.41-2.4 2.4-1.41-1.41zM17.66 19.07l-2.4-2.4 1.41-1.41 2.4 2.4zM7.34 8.75l-2.4-2.4 1.41-1.41 2.4 2.4z" />
+        </svg>
+        <svg v-else viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M20.4 15.3A8.8 8.8 0 0 1 8.7 3.6a8.9 8.9 0 1 0 11.7 11.7Z" />
+        </svg>
       </button>
       <SkinSwitcher />
       <div class="profile-display" aria-label="Sucremi 用户">
@@ -55,13 +99,14 @@ const title = computed(() => (route.path === '/' ? '首页概览' : (route.meta.
   display: grid;
   grid-template-columns: minmax(170px, 1fr) minmax(280px, 360px) minmax(220px, 1fr);
   align-items: center;
-  min-height: 66px;
-  margin: 25px 21px 0;
+  height: 60px;
+  min-height: 60px;
+  margin: 20px 21px 0;
   padding: 0 20px 0 28px;
-  border: 1px solid rgba(238, 227, 244, 0.88);
+  border: 1px solid var(--sc-border-soft);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 5px 18px rgba(105, 78, 128, 0.045);
+  background: var(--sc-panel);
+  box-shadow: var(--sc-shadow-sm);
   backdrop-filter: blur(18px);
 }
 
@@ -87,6 +132,10 @@ const title = computed(() => (route.path === '/' ? '首页概览' : (route.meta.
   white-space: nowrap;
 }
 
+:global(html[data-color-mode='dark']) .page-title {
+  color: var(--sc-text);
+}
+
 .search-display {
   display: flex;
   min-width: 0;
@@ -94,17 +143,17 @@ const title = computed(() => (route.path === '/' ? '首页概览' : (route.meta.
   align-items: center;
   gap: 10px;
   padding: 0 10px 0 13px;
-  border: 1px solid #eee3f4;
+  border: 1px solid var(--sc-border-soft);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  color: rgba(140, 126, 159, 0.8);
+  background: var(--sc-panel-strong);
+  color: var(--sc-text-placeholder);
 }
 
 .search-icon {
   width: 17px;
   height: 17px;
   flex: 0 0 auto;
-  stroke: #5a42c5;
+  stroke: #a99ac0;
   stroke-linecap: round;
   stroke-width: 2.4;
 }
@@ -120,9 +169,9 @@ const title = computed(() => (route.path === '/' ? '首页概览' : (route.meta.
 .search-shortcut {
   flex: 0 0 auto;
   padding: 3px 7px;
-  border: 1px solid #eee3f4;
+  border: 1px solid var(--sc-border-soft);
   border-radius: 10px;
-  color: #9689aa;
+  color: var(--sc-text-secondary);
   font-size: 11px;
   line-height: 1.2;
 }
@@ -143,21 +192,21 @@ const title = computed(() => (route.path === '/' ? '首页概览' : (route.meta.
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #62598a;
+  border: 1px solid rgba(155, 134, 248, 0.8);
+  background: #f3eaff;
+  color: #9b86f8;
   cursor: pointer;
 }
 
 .icon-action:hover {
-  background: rgba(243, 234, 255, 0.8);
+  background: var(--sc-brand-alt-soft);
 }
 
 .icon-action svg {
   width: 19px;
   height: 19px;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.7;
+  fill: currentColor;
+  stroke: none;
 }
 
 .notification-action i {
@@ -168,14 +217,24 @@ const title = computed(() => (route.path === '/' ? '首页概览' : (route.meta.
   height: 8px;
   border-radius: 50%;
   background: #ef86ba;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 2px var(--sc-panel-strong);
+}
+
+.color-mode-action {
+  border-color: rgba(155, 134, 248, 0.8);
+  background: #f3eaff;
+  color: #9b86f8;
+}
+
+.color-mode-action:hover {
+  background: #e9ddff;
 }
 
 .profile-display {
   display: flex;
   align-items: center;
   gap: 9px;
-  color: #40344f;
+  color: var(--sc-text);
   white-space: nowrap;
 }
 
@@ -184,10 +243,10 @@ const title = computed(() => (route.path === '/' ? '首页概览' : (route.meta.
   width: 36px;
   height: 36px;
   place-items: center;
-  border: 1px solid rgba(182, 153, 238, 0.55);
+  border: 1px solid var(--sc-border-strong);
   border-radius: 50%;
-  background: linear-gradient(145deg, #ffe7f4, #e9e1ff);
-  color: #8058ce;
+  background: var(--sc-gradient-soft);
+  color: var(--sc-brand-alt-strong);
   font-size: 16px;
   font-weight: 700;
 }
@@ -200,7 +259,7 @@ const title = computed(() => (route.path === '/' ? '首页概览' : (route.meta.
   width: 12px;
   height: 12px;
   margin-left: 2px;
-  stroke: #80769a;
+  stroke: var(--sc-text-secondary);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.4;
@@ -238,8 +297,9 @@ const title = computed(() => (route.path === '/' ? '首页概览' : (route.meta.
 @media (max-width: 768px) {
   .app-top-navigation {
     grid-template-columns: minmax(0, 1fr) auto;
+    height: 60px;
     min-height: 60px;
-    margin: 25px 12px 0;
+    margin: 20px 12px 0;
     padding: 0 12px;
     border-radius: 16px;
   }

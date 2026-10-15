@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { SKINS, useSkinStore } from '@/stores/skin'
-import AppIcon from '@/components/AppIcon.vue'
 
 /** 皮肤切换入口。只切换样式：不触发任何请求，也不影响页面结构与数据。 */
 const skin = useSkinStore()
@@ -23,7 +22,9 @@ async function onCommand(command: unknown) {
 <template>
   <el-dropdown trigger="click" placement="bottom-end" @command="onCommand">
     <button class="skin-trigger" type="button" :title="`当前皮肤：${currentLabel}`">
-      <AppIcon name="droplet" :size="16" />
+      <svg class="skin-trigger-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2.8c3.35 3.85 6.2 7.35 6.2 11.05a6.2 6.2 0 0 1-12.4 0c0-3.7 2.85-7.2 6.2-11.05Z" />
+      </svg>
       <span class="skin-trigger-label">{{ currentLabel }}</span>
     </button>
     <template #dropdown>
@@ -47,14 +48,15 @@ async function onCommand(command: unknown) {
 
 <style scoped>
 .skin-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border: 1px solid var(--sc-border-soft);
-  border-radius: var(--sc-radius-pill);
-  background: var(--sc-panel-strong);
-  color: var(--sc-text-secondary);
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(155, 134, 248, 0.8);
+  border-radius: 50%;
+  background: #f3eaff;
+  color: #9b86f8;
   font-family: inherit;
   font-size: var(--sc-font-size-md);
   cursor: pointer;
@@ -65,14 +67,23 @@ async function onCommand(command: unknown) {
 }
 
 .skin-trigger:hover {
-  color: var(--sc-brand-strong);
-  border-color: var(--sc-brand);
-  background: var(--sc-brand-soft);
+  color: #5b43c2;
+  background: #e9ddff;
 }
 
 .skin-trigger:focus-visible {
   outline: 2px solid var(--sc-brand);
   outline-offset: 2px;
+}
+
+.skin-trigger-label {
+  display: none;
+}
+
+.skin-trigger-icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
 }
 
 .skin-option {
@@ -102,14 +113,4 @@ async function onCommand(command: unknown) {
   font-size: var(--sc-font-size-sm);
 }
 
-/* 窄屏只留图标，把标题栏空间让给页面标题 */
-@media (max-width: 768px) {
-  .skin-trigger-label {
-    display: none;
-  }
-
-  .skin-trigger {
-    padding: 6px 9px;
-  }
-}
 </style>

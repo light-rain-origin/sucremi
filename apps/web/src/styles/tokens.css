@@ -1,6 +1,6 @@
 /**
  * 设计 Token 与全局主题 —— 契约层。
- *
+*
  * 分三段，皮肤切换只动第 ② 段：
  *   ① 调色板 palette —— 具名色（--sc-pink / --sc-purple / …），只有皮肤自己该引用
  *   ② 角色 role      —— 语义槽位（--sc-brand / --sc-bg / --sc-text / …），组件与全局规则只引用这一层
@@ -15,6 +15,7 @@
  */
 
 :root {
+  color-scheme: light;
   /* ==================== ① 调色板：Classic = 樱花粉 + 淡紫 ==================== */
   --sc-pink: #f5a8cb;
   --sc-pink-strong: #d95f92;
@@ -43,6 +44,10 @@
   /* 半透明面板：叠在页面氛围上产生「轻」的层次，不用 backdrop-filter */
   --sc-panel: rgba(255, 252, 254, 0.76);
   --sc-panel-strong: rgba(255, 253, 255, 0.92);
+  --sc-card-surface: #fffdfe;
+  --sc-flow-grid-line: #eee3f4;
+  --sc-flow-summary-bg: var(--sc-text);
+  --sc-flow-summary-text: #fff;
   /* 占位 / 未实现区域用的更淡面板 */
   --sc-panel-faint: rgba(255, 252, 254, 0.55);
   --sc-bg-muted: #f7f0f9;
@@ -245,6 +250,61 @@
   --el-slider-height: 6px;
   --el-slider-button-size: 16px;
   --el-progress-bg-color: #f7ecf6;
+}
+
+html[data-color-mode='dark'] {
+  color-scheme: dark;
+  --sc-bg: #1f1c29;
+  --sc-bg-elevated: #292536;
+  --sc-panel: rgba(41, 37, 54, 0.82);
+  --sc-panel-strong: rgba(48, 43, 62, 0.96);
+  --sc-panel-faint: rgba(48, 43, 62, 0.62);
+  --sc-card-surface: #302b3d;
+  --sc-flow-grid-line: #484052;
+  --sc-flow-summary-bg: #292536;
+  --sc-flow-summary-text: #f2edf8;
+  --sc-bg-muted: #383247;
+  --sc-sidebar-bg: linear-gradient(180deg, #292536 0%, #242130 100%);
+  --sc-sidebar-glow-primary: rgba(168, 124, 195, 0.13);
+  --sc-sidebar-glow-secondary: rgba(137, 121, 202, 0.12);
+  --sc-sidebar-star-dot: rgba(206, 177, 242, 0.35);
+  --sc-text: #f2edf8;
+  --sc-text-secondary: #c0b6d0;
+  --sc-text-placeholder: #978da8;
+  --sc-border: #494253;
+  --sc-border-soft: #403a4c;
+  --sc-border-strong: #5a5068;
+  --sc-overlay: rgba(10, 8, 15, 0.62);
+  --sc-gradient-soft: linear-gradient(120deg, #352b3d 0%, #302b41 52%, #2a2739 100%);
+  --sc-gradient-page: linear-gradient(165deg, #211d2b 0%, #242031 42%, #201e2e 100%);
+  --sc-nav-active-bg: linear-gradient(100deg, rgba(217, 95, 146, 0.2), rgba(155, 134, 248, 0.2));
+  --sc-nav-icon-bg: rgba(155, 134, 248, 0.16);
+  --sc-nav-icon-bg-active: rgba(243, 234, 255, 0.12);
+  --sc-nav-hover-bg: rgba(255, 255, 255, 0.06);
+  --sc-nav-accent: #d990c2;
+  --sc-hero-glow: radial-gradient(circle, rgba(191, 123, 178, 0.22), transparent 68%);
+  --sc-backdrop: linear-gradient(135deg, #211d2b 0%, #282236 52%, #211f30 100%);
+  --sc-swatch-ring: rgba(255, 255, 255, 0.12);
+  --sc-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.18);
+  --sc-shadow-md: 0 8px 22px rgba(0, 0, 0, 0.24);
+  --sc-shadow-lg: 0 16px 38px rgba(0, 0, 0, 0.32);
+  --el-text-color-primary: var(--sc-text);
+  --el-text-color-regular: var(--sc-text-secondary);
+  --el-text-color-secondary: var(--sc-text-secondary);
+  --el-text-color-placeholder: var(--sc-text-placeholder);
+  --el-border-color: var(--sc-border);
+  --el-border-color-light: var(--sc-border-soft);
+  --el-border-color-lighter: var(--sc-border-soft);
+  --el-border-color-extra-light: var(--sc-border-soft);
+  --el-border-color-hover: var(--sc-border-strong);
+  --el-bg-color: var(--sc-bg-elevated);
+  --el-bg-color-overlay: var(--sc-bg-elevated);
+  --el-bg-color-page: var(--sc-bg);
+  --el-fill-color-blank: var(--sc-bg-elevated);
+  --el-fill-color-light: var(--sc-bg-muted);
+  --el-fill-color-lighter: #373145;
+  --el-input-bg-color: var(--sc-bg-elevated);
+  --el-progress-bg-color: #41394b;
 }
 
 * {
