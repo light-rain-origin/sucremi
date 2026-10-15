@@ -45,6 +45,12 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(40400, ex.getMessage()));
     }
 
+    @ExceptionHandler(ResourceConflictException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConflict(ResourceConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(40900, ex.getMessage()));
+    }
+
     @ExceptionHandler(UnauthenticatedException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnauthenticated(UnauthenticatedException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.sucremi.common.exception.ResourceNotFoundException;
 import com.sucremi.activity.ProjectActivityService;
 import com.sucremi.decision.DecisionService;
+import com.sucremi.decision.dto.KeyDecisionResponse;
 import com.sucremi.identity.CurrentUserResolver;
 import com.sucremi.project.Project;
 import com.sucremi.project.ProjectMapper;
@@ -259,12 +260,15 @@ class RecoveryServiceImplTest {
         when(projectMapper.selectOne(any())).thenReturn(project(3L, 7L));
         when(checkpointMapper.selectOne(any())).thenReturn(null);
         when(actionMapper.selectList(any())).thenReturn(List.of());
+        when(decisionService.keyDecisions(3L)).thenReturn(List.of(
+                new KeyDecisionResponse(13L, "采用 Pinia", "Pinia", "更贴合 Vue")));
 
         RecoveryResponse response = service.recovery(3L);
 
         assertNull(response.latestCheckpoint());
         assertNull(response.recoverySummary());
         assertTrue(response.actions().isEmpty());
+        assertEquals(13L, response.keyDecisions().getFirst().id());
     }
 
     /** 构造测试用项目实体。 */

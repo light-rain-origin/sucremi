@@ -5,6 +5,7 @@ import com.sucremi.common.exception.BusinessException;
 import com.sucremi.common.exception.ResourceNotFoundException;
 import com.sucremi.activity.ProjectActivityService;
 import com.sucremi.activity.ProjectActivityType;
+import com.sucremi.decision.DecisionService;
 import com.sucremi.identity.CurrentUserResolver;
 import com.sucremi.project.Project;
 import com.sucremi.project.ProjectMapper;
@@ -38,16 +39,18 @@ public class RecoveryServiceImpl implements RecoveryService {
     private final ProjectActionMapper actionMapper;
     private final CurrentUserResolver currentUser;
     private final ProjectActivityService activityService;
+    private final DecisionService decisionService;
 
     /** 创建恢复服务并注入项目、检查点、行动数据访问及当前身份解析器。 */
     public RecoveryServiceImpl(ProjectMapper projectMapper, ProjectCheckpointMapper checkpointMapper,
                                ProjectActionMapper actionMapper, CurrentUserResolver currentUser,
-                               ProjectActivityService activityService) {
+                               ProjectActivityService activityService, DecisionService decisionService) {
         this.projectMapper = projectMapper;
         this.checkpointMapper = checkpointMapper;
         this.actionMapper = actionMapper;
         this.currentUser = currentUser;
         this.activityService = activityService;
+        this.decisionService = decisionService;
     }
 
     /** 校验项目归属后创建新的检查点快照。 */
@@ -238,7 +241,7 @@ public class RecoveryServiceImpl implements RecoveryService {
         List<ActionResponse> actions = listActions(projectId);
         String summary = checkpoint == null ? null : buildSummary(checkpoint, actions);
         return new RecoveryResponse(toProjectResponse(project), checkpoint == null ? null : toResponse(checkpoint),
-                actions, summary);
+                actions, summary, decisionService.keyDecisions(projectId));
     }
 
     /** 返回归属指定用户的项目；不属于该用户时抛出 404。 */
