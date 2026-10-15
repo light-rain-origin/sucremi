@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.sucremi.common.exception.ResourceNotFoundException;
 import com.sucremi.activity.ProjectActivityService;
+import com.sucremi.decision.DecisionService;
 import com.sucremi.identity.CurrentUserResolver;
 import com.sucremi.project.Project;
 import com.sucremi.project.ProjectMapper;
@@ -42,6 +43,7 @@ class RecoveryServiceImplTest {
     @Mock ProjectCheckpointMapper checkpointMapper;
     @Mock ProjectActionMapper actionMapper;
     @Mock ProjectActivityService activityService;
+    @Mock DecisionService decisionService;
 
     private final CurrentUserResolver currentUser = () -> 7L;
     private RecoveryServiceImpl service;
@@ -58,7 +60,7 @@ class RecoveryServiceImplTest {
     /** 为每个测试创建新的服务实例。 */
     @BeforeEach
     void setUp() {
-        service = new RecoveryServiceImpl(projectMapper, checkpointMapper, actionMapper, currentUser, activityService);
+        service = new RecoveryServiceImpl(projectMapper, checkpointMapper, actionMapper, currentUser, activityService, decisionService);
     }
 
     /** 检查点创建时应注入可信用户和项目归属，并清理摘要首尾空白。 */
