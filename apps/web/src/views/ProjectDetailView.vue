@@ -114,7 +114,14 @@ async function toggleArchive() {
       </el-card>
 
       <div class="future-grid">
-        <el-card v-for="s in ['任务与下一步', '进度 / 活动时间线', '检查点历史', '决策记录 & 知识资料']"
+        <el-card shadow="never" class="future-card recovery-card">
+          <div class="future-title">检查点与下一步</div>
+          <div class="recovery-hint">管理项目进展记录、检查点历史和后续行动</div>
+          <RouterLink class="feature-link" :to="`/projects/${project.id}/recovery`">
+            打开恢复上下文 <span aria-hidden="true">→</span>
+          </RouterLink>
+        </el-card>
+        <el-card v-for="s in ['进度 / 活动时间线', '决策记录 & 知识资料']"
                  :key="s" shadow="never" class="future-card">
           <div class="future-title">{{ s }}</div>
           <div class="future-hint">即将推出</div>
@@ -202,9 +209,31 @@ async function toggleArchive() {
   border-radius: var(--sc-radius-lg);
   border-style: dashed;
 }
+.recovery-card {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--sc-brand-alt) 38%, var(--sc-border-soft));
+  background: color-mix(in srgb, var(--sc-brand-alt) 5%, var(--sc-card-surface));
+}
 .future-title {
   font-weight: 600;
   margin-bottom: 6px;
+}
+.recovery-hint {
+  color: var(--sc-text-secondary);
+  font-size: var(--sc-font-size-md);
+  line-height: 1.6;
+}
+.feature-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 12px;
+  color: var(--sc-brand-alt-strong);
+  font-size: var(--sc-font-size-md);
+  font-weight: 600;
+}
+.feature-link:hover {
+  color: var(--sc-brand-strong);
 }
 .future-hint {
   color: var(--sc-text-placeholder);

@@ -34,3 +34,7 @@ export function apiPut<T>(path: string, body?: unknown): Promise<ApiResponse<T>>
 export function apiPatch<T>(path: string, body?: unknown): Promise<ApiResponse<T>> {
   return request<T>(path, { method: 'PATCH', body: body === undefined ? undefined : JSON.stringify(body) })
 }
+
+export function apiDelete<T>(path: string): Promise<ApiResponse<T>> {
+  return request<T>(path, { method: 'DELETE' })
+}

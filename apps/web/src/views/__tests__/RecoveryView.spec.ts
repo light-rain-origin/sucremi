@@ -2,12 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import RecoveryView from '../RecoveryView.vue'
+import { ElMessageBox } from 'element-plus'
 import type { ProjectRecovery } from '@/types/recovery'
 
 vi.mock('@/api/recovery', () => ({
   getProjectRecovery: vi.fn<typeof import('@/api/recovery').getProjectRecovery>(),
+  listCheckpoints: vi.fn<typeof import('@/api/recovery').listCheckpoints>(),
   createCheckpoint: vi.fn<typeof import('@/api/recovery').createCheckpoint>(),
   createAction: vi.fn<typeof import('@/api/recovery').createAction>(),
+  deleteCheckpoint: vi.fn<typeof import('@/api/recovery').deleteCheckpoint>(),
+  deleteAction: vi.fn<typeof import('@/api/recovery').deleteAction>(),
   updateActionStatus: vi.fn<typeof import('@/api/recovery').updateActionStatus>(),
   reorderActions: vi.fn<typeof import('@/api/recovery').reorderActions>(),
 }))
@@ -15,7 +19,10 @@ vi.mock('@/api/recovery', () => ({
 import {
   createAction,
   createCheckpoint,
+  deleteAction,
+  deleteCheckpoint,
   getProjectRecovery,
+  listCheckpoints,
   reorderActions,
   updateActionStatus,
 } from '@/api/recovery'
@@ -23,6 +30,9 @@ import {
 const mockedRecovery = vi.mocked(getProjectRecovery)
 const mockedCreateCheckpoint = vi.mocked(createCheckpoint)
 const mockedCreateAction = vi.mocked(createAction)
+const mockedDeleteAction = vi.mocked(deleteAction)
+const mockedDeleteCheckpoint = vi.mocked(deleteCheckpoint)
+const mockedListCheckpoints = vi.mocked(listCheckpoints)
 const mockedUpdateActionStatus = vi.mocked(updateActionStatus)
 const mockedReorderActions = vi.mocked(reorderActions)
 
@@ -74,6 +84,13 @@ async function render(initial: ProjectRecovery = recovery()) {
     ],
   })
   mockedRecovery.mockResolvedValue(ok(initial))
+  mockedListCheckpoints.mockResolvedValue({
+    code: 0,
+    message: 'OK',
+    data: initial.latestCheckpoint ? [initial.latestCheckpoint] : [],
+    requestId: 'h',
+    timestamp: 1,
+  })
   await router.push('/projects/8/recovery')
   await router.isReady()
   const wrapper = mount(RecoveryView, { global: { plugins: [router] } })
@@ -83,11 +100,22 @@ async function render(initial: ProjectRecovery = recovery()) {
 
 describe('RecoveryView', () => {
   beforeEach(() => {
+    vi.restoreAllMocks()
     mockedRecovery.mockReset()
     mockedCreateCheckpoint.mockReset()
     mockedCreateAction.mockReset()
+    mockedDeleteAction.mockReset()
+    mockedDeleteCheckpoint.mockReset()
+    mockedListCheckpoints.mockReset()
     mockedUpdateActionStatus.mockReset()
     mockedReorderActions.mockReset()
+    mockedListCheckpoints.mockResolvedValue({
+      code: 0,
+      message: 'OK',
+      data: [],
+      requestId: 'h',
+      timestamp: 1,
+    })
   })
 
   it('shows an honest empty checkpoint state and a form to save one', async () => {
@@ -188,6 +216,40 @@ describe('RecoveryView', () => {
     await flushPromises()
 
     expect(mockedReorderActions).toHaveBeenCalledWith(8, [22, 21])
+  })
+
+  it('deletes an action after confirmation and updates the list', async () => {
+    vi.spyOn(ElMessageBox, 'confirm').mockResolvedValue({ value: '', action: 'confirm' } as never)
+    mockedDeleteAction.mockResolvedValue({ code: 0, message: 'OK', data: undefined, requestId: 'd', timestamp: 4 })
+    const wrapper = await render(recovery({ actions: [action] }))
+
+    await wrapper.get('button[aria-label="删除行动：补充异常处理"]').trigger('click')
+    await flushPromises()
+
+    expect(mockedDeleteAction).toHaveBeenCalledWith(8, 21)
+    expect(wrapper.text()).toContain('还没有下一步行动')
+  })
+
+  it('deletes the latest checkpoint and returns to the empty state', async () => {
+    vi.spyOn(ElMessageBox, 'confirm').mockResolvedValue({ value: '', action: 'confirm' } as never)
+    const savedCheckpoint = {
+      id: 9,
+      projectId: 8,
+      summary: '旧的进度记录',
+      currentFocus: null,
+      blockers: null,
+      createdAt: '2026-10-14T12:00:00',
+    }
+    mockedDeleteCheckpoint.mockResolvedValue({ code: 0, message: 'OK', data: undefined, requestId: 'd', timestamp: 4 })
+    const wrapper = await render(recovery({ latestCheckpoint: savedCheckpoint, recoverySummary: '旧的进度记录' }))
+    mockedListCheckpoints.mockResolvedValue({ code: 0, message: 'OK', data: [], requestId: 'h', timestamp: 5 })
+    mockedRecovery.mockResolvedValue(ok(recovery()))
+
+    await wrapper.get('button[aria-label="删除最新检查点"]').trigger('click')
+    await flushPromises()
+
+    expect(mockedDeleteCheckpoint).toHaveBeenCalledWith(8, 9)
+    expect(wrapper.text()).toContain('还没有保存过检查点')
   })
 
   it('shows a loading state while recovery data is pending', async () => {

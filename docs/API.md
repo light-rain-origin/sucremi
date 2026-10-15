@@ -100,9 +100,11 @@
 |------|------|------|
 | POST | `/api/v1/projects/{projectId}/checkpoints` | 保存检查点；body：`summary`（必填，≤10000）、`currentFocus`（可选，≤255）、`blockers`（可选，≤10000） |
 | GET | `/api/v1/projects/{projectId}/checkpoints` | 按时间倒序读取检查点历史 |
+| DELETE | `/api/v1/projects/{projectId}/checkpoints/{checkpointId}` | 删除指定检查点；仅当前用户可删除所属项目中的记录 |
 | GET | `/api/v1/projects/{projectId}/checkpoints/latest` | 读取最新检查点；无记录时 `data` 为空 |
 | POST | `/api/v1/projects/{projectId}/actions` | 新建行动；body：`title`（必填，≤200）、`details`（可选，≤1000） |
 | GET | `/api/v1/projects/{projectId}/actions` | 按 `sortOrder` 读取行动 |
+| DELETE | `/api/v1/projects/{projectId}/actions/{actionId}` | 删除指定行动；仅当前用户可删除所属项目中的记录 |
 | PATCH | `/api/v1/projects/{projectId}/actions/{actionId}/status` | 更新状态；body：`{"status":"TODO"}` 或 `{"status":"DONE"}` |
 | PUT | `/api/v1/projects/{projectId}/actions/order` | 更新顺序；body：`{"actionIds":[1,2]}`，须包含该项目全部行动 ID 且不可重复 |
 | GET | `/api/v1/projects/{projectId}/recovery` | 获取项目、最新检查点、行动及规则式恢复摘要 |

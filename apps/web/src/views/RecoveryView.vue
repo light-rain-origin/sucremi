@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 import {
   createAction,
   createCheckpoint,
+  deleteAction,
+  deleteCheckpoint,
   getProjectRecovery,
+  listCheckpoints,
   reorderActions,
   updateActionStatus,
 } from '@/api/recovery'
-import type { ProjectRecovery } from '@/types/recovery'
+import type { ProjectCheckpoint, ProjectRecovery } from '@/types/recovery'
 import { formatDateTime } from '@/utils/datetime'
 
 const route = useRoute()
 const recovery = ref<ProjectRecovery | null>(null)
+const checkpointHistory = ref<ProjectCheckpoint[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 const mutationError = ref<string | null>(null)
@@ -33,9 +38,14 @@ async function load() {
   error.value = null
   mutationError.value = null
   try {
-    const response = await getProjectRecovery(projectId.value)
+    const [response, historyResponse] = await Promise.all([
+      getProjectRecovery(projectId.value),
+      listCheckpoints(projectId.value),
+    ])
     if (response.code !== 0) throw new Error(response.message || '恢复信息读取失败')
+    if (historyResponse.code !== 0) throw new Error(historyResponse.message || '检查点历史读取失败')
     recovery.value = response.data
+    checkpointHistory.value = historyResponse.data
   } catch (reason) {
     error.value = (reason as Error).message || '恢复信息读取失败'
   } finally {
@@ -44,6 +54,10 @@ async function load() {
 }
 
 watch(() => route.params.id, load, { immediate: true })
+
+const olderCheckpoints = computed(() =>
+  checkpointHistory.value.filter((checkpoint) => checkpoint.id !== recovery.value?.latestCheckpoint?.id),
+)
 
 async function saveCheckpoint() {
   if (!checkpointForm.summary.trim()) return
@@ -84,6 +98,46 @@ async function addAction() {
     mutationError.value = (reason as Error).message || '行动保存失败'
   } finally {
     savingAction.value = false
+  }
+}
+
+async function confirmDelete(message: string) {
+  try {
+    await ElMessageBox.confirm(message, '确认删除', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function removeAction(actionId: number, title: string) {
+  if (!(await confirmDelete(`确定删除下一步行动“${title}”吗？`))) return
+  mutationError.value = null
+  try {
+    const response = await deleteAction(projectId.value, actionId)
+    if (response.code !== 0) throw new Error(response.message || '行动删除失败')
+    if (recovery.value) {
+      recovery.value.actions = recovery.value.actions.filter((action) => action.id !== actionId)
+      if (recovery.value.latestCheckpoint) recovery.value.recoverySummary = buildLocalSummary(recovery.value)
+    }
+  } catch (reason) {
+    mutationError.value = (reason as Error).message || '行动删除失败'
+  }
+}
+
+async function removeCheckpoint(checkpointId: number) {
+  if (!(await confirmDelete('确定删除这条检查点吗？删除后无法恢复。'))) return
+  mutationError.value = null
+  try {
+    const response = await deleteCheckpoint(projectId.value, checkpointId)
+    if (response.code !== 0) throw new Error(response.message || '检查点删除失败')
+    await load()
+  } catch (reason) {
+    mutationError.value = (reason as Error).message || '检查点删除失败'
   }
 }
 
@@ -167,6 +221,12 @@ function buildLocalSummary(data: ProjectRecovery) {
             <h2 id="recovery-summary-title">上次停在这里</h2>
             <p>保存于 {{ formatDateTime(recovery.latestCheckpoint.createdAt) }}</p>
           </div>
+          <button
+            type="button"
+            class="delete-button checkpoint-delete"
+            aria-label="删除最新检查点"
+            @click="removeCheckpoint(recovery.latestCheckpoint.id)"
+          >删除检查点</button>
         </div>
         <p class="summary-text">{{ recovery.recoverySummary }}</p>
         <dl class="checkpoint-details">
@@ -179,7 +239,28 @@ function buildLocalSummary(data: ProjectRecovery) {
         </dl>
       </section>
 
-      <section v-else class="surface no-checkpoint" aria-labelledby="empty-checkpoint-title">
+      <section v-if="olderCheckpoints.length" class="surface checkpoint-history" aria-labelledby="checkpoint-history-title">
+        <div class="section-heading history-heading">
+          <div>
+            <h2 id="checkpoint-history-title">更早的检查点</h2>
+            <p>保留每次记录，也可以单独删除不再需要的记录。</p>
+          </div>
+        </div>
+        <article v-for="checkpoint in olderCheckpoints" :key="checkpoint.id" class="history-row">
+          <div class="history-copy">
+            <time>{{ formatDateTime(checkpoint.createdAt) }}</time>
+            <p>{{ checkpoint.summary }}</p>
+          </div>
+          <button
+            type="button"
+            class="delete-button"
+            :aria-label="`删除检查点：${formatDateTime(checkpoint.createdAt)}`"
+            @click="removeCheckpoint(checkpoint.id)"
+          >删除</button>
+        </article>
+      </section>
+
+      <section v-if="!recovery.latestCheckpoint" class="surface no-checkpoint" aria-labelledby="empty-checkpoint-title">
         <span class="empty-sparkle" aria-hidden="true">✧</span>
         <div>
           <h2 id="empty-checkpoint-title">还没有保存过检查点</h2>
@@ -219,6 +300,7 @@ function buildLocalSummary(data: ProjectRecovery) {
               <button type="button" :aria-label="`上移：${action.title}`" :disabled="index === 0" @click="moveAction(index, -1)">↑</button>
               <button type="button" :aria-label="`下移：${action.title}`" :disabled="index === recovery.actions.length - 1" @click="moveAction(index, 1)">↓</button>
             </div>
+            <button type="button" class="delete-button" :aria-label="`删除行动：${action.title}`" @click="removeAction(action.id, action.title)">删除</button>
           </article>
         </div>
         <p v-else class="no-actions">还没有下一步行动，先记下一件最容易开始的小事吧。</p>
@@ -342,6 +424,50 @@ function buildLocalSummary(data: ProjectRecovery) {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.section-heading > div:last-child {
+  flex: 1;
+}
+
+.checkpoint-delete {
+  margin-left: auto;
+}
+
+.checkpoint-history {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-heading {
+  margin-bottom: 5px;
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--sc-border-soft);
+}
+
+.history-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-copy time {
+  color: var(--sc-text-placeholder);
+  font-size: var(--sc-font-size-xs);
+}
+
+.history-copy p {
+  margin: 4px 0 0;
+  color: var(--sc-text);
+  font-size: var(--sc-font-size-md);
+  line-height: 1.65;
+  white-space: pre-wrap;
 }
 
 .section-heading h2,
@@ -514,6 +640,22 @@ function buildLocalSummary(data: ProjectRecovery) {
 .order-controls button:disabled {
   opacity: 0.38;
   cursor: default;
+}
+
+.delete-button {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--sc-error-strong) 28%, var(--sc-border-soft));
+  border-radius: var(--sc-radius-pill);
+  background: color-mix(in srgb, var(--sc-error-strong) 5%, var(--sc-card-surface));
+  color: var(--sc-error-strong);
+  font: inherit;
+  font-size: var(--sc-font-size-xs);
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background: color-mix(in srgb, var(--sc-error-strong) 12%, var(--sc-card-surface));
 }
 
 .action-form,

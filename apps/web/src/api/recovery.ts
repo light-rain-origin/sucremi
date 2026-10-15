@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost, apiPut, type ApiResponse } from './http'
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut, type ApiResponse } from './http'
 import type {
   CreateActionPayload,
   CreateCheckpointPayload,
@@ -25,6 +25,11 @@ export function listCheckpoints(projectId: number | string): Promise<ApiResponse
   return apiGet<ProjectCheckpoint[]>(`/api/v1/projects/${projectId}/checkpoints`)
 }
 
+/** 删除指定项目检查点。 */
+export function deleteCheckpoint(projectId: number | string, checkpointId: number | string): Promise<ApiResponse<void>> {
+  return apiDelete<void>(`/api/v1/projects/${projectId}/checkpoints/${checkpointId}`)
+}
+
 /** 读取项目最新检查点。 */
 export function getLatestCheckpoint(projectId: number | string): Promise<ApiResponse<ProjectCheckpoint>> {
   return apiGet<ProjectCheckpoint>(`/api/v1/projects/${projectId}/checkpoints/latest`)
@@ -36,6 +41,11 @@ export function createAction(
   payload: CreateActionPayload,
 ): Promise<ApiResponse<ProjectAction>> {
   return apiPost<ProjectAction>(`/api/v1/projects/${projectId}/actions`, payload)
+}
+
+/** 删除指定项目下一步行动。 */
+export function deleteAction(projectId: number | string, actionId: number | string): Promise<ApiResponse<void>> {
+  return apiDelete<void>(`/api/v1/projects/${projectId}/actions/${actionId}`)
 }
 
 /** 修改行动完成状态。 */
