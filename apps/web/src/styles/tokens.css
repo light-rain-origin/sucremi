@@ -98,6 +98,22 @@
   --sc-backdrop: linear-gradient(135deg, #fff4fa 0%, #f8f3ff 52%, #fffafd 100%);
   --sc-background-glow-color: #d9d0ff;
   --sc-background-glow-opacity: 0.6715686;
+  --sc-banner-surface: linear-gradient(120deg, #fbe3f2 0%, #e8e2ff 52%, #f7e7ff 100%);
+  --sc-banner-border: rgba(238, 227, 244, 0.78);
+  --sc-banner-text: #40344f;
+  --sc-banner-description: rgba(99, 83, 119, 0.78);
+  --sc-banner-glow: radial-gradient(ellipse, rgba(212, 202, 255, 0.65), transparent 68%);
+  --sc-banner-sparkle: rgba(238, 127, 183, 0.78);
+  --sc-banner-sparkle-alt: #b6a2f8;
+  --sc-banner-orb-border: rgba(255, 255, 255, 0.5);
+  --sc-banner-orb-surface: rgba(255, 255, 255, 0.18);
+  --sc-banner-primary: linear-gradient(105deg, #f2a3c9 0%, #b39af4 100%);
+  --sc-banner-primary-shadow: 0 7px 18px rgba(174, 131, 208, 0.2);
+  --sc-banner-primary-shadow-hover: 0 10px 22px rgba(174, 131, 208, 0.28);
+  --sc-banner-secondary: rgba(255, 255, 255, 0.88);
+  --sc-banner-secondary-border: rgba(238, 227, 244, 0.9);
+  --sc-banner-secondary-hover: #fff;
+  --sc-banner-secondary-hover-shadow: 0 5px 14px rgba(105, 78, 128, 0.08);
   /*
    * 角色插画装饰位（默认关闭）。
    * 素材到位后由皮肤同时给出 --sc-character-image 与 --sc-character-height 才会显示；
@@ -288,6 +304,22 @@ html[data-color-mode='dark'] {
   --sc-backdrop: linear-gradient(135deg, #211d2b 0%, #282236 52%, #211f30 100%);
   --sc-background-glow-color: #806b9b;
   --sc-background-glow-opacity: 0.18;
+  --sc-banner-surface: linear-gradient(120deg, #38283a 0%, #302b45 52%, #35283c 100%);
+  --sc-banner-border: var(--sc-border-soft);
+  --sc-banner-text: var(--sc-text);
+  --sc-banner-description: var(--sc-text-secondary);
+  --sc-banner-glow: radial-gradient(ellipse, rgba(155, 134, 248, 0.2), transparent 72%);
+  --sc-banner-sparkle: rgba(217, 144, 194, 0.42);
+  --sc-banner-sparkle-alt: rgba(155, 134, 248, 0.48);
+  --sc-banner-orb-border: rgba(206, 190, 238, 0.2);
+  --sc-banner-orb-surface: rgba(155, 134, 248, 0.035);
+  --sc-banner-primary: linear-gradient(105deg, #b975a0 0%, #826fc5 100%);
+  --sc-banner-primary-shadow: 0 7px 18px rgba(12, 9, 20, 0.24);
+  --sc-banner-primary-shadow-hover: 0 10px 22px rgba(12, 9, 20, 0.34);
+  --sc-banner-secondary: rgba(48, 43, 62, 0.82);
+  --sc-banner-secondary-border: var(--sc-border-strong);
+  --sc-banner-secondary-hover: var(--sc-bg-muted);
+  --sc-banner-secondary-hover-shadow: var(--sc-shadow-sm);
   --sc-swatch-ring: rgba(255, 255, 255, 0.12);
   --sc-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.18);
   --sc-shadow-md: 0 8px 22px rgba(0, 0, 0, 0.24);
