@@ -8,6 +8,7 @@ import DashboardStatsCards from '@/components/DashboardStatsCards.vue'
 import DashboardProjectProgress from '@/components/DashboardProjectProgress.vue'
 import ProjectFlowCard from '@/components/ProjectFlowCard.vue'
 import ContinueWorkCard from '@/components/ContinueWorkCard.vue'
+import ProjectActivityTimeline from '@/components/ProjectActivityTimeline.vue'
 
 const router = useRouter()
 const dashboard = useDashboardStore()
@@ -58,11 +59,7 @@ function openDetail(id: number) {
             </span>
             <h2 id="dashboard-activity-title">近期活动</h2>
           </header>
-          <div class="dashboard-mini-empty">
-            <span class="empty-mark" aria-hidden="true">· · ·</span>
-            <strong>暂无近期活动</strong>
-            <p>项目有更新时，会在这里留下记录。</p>
-          </div>
+          <ProjectActivityTimeline compact />
         </section>
       </aside>
     </div>
@@ -160,6 +157,11 @@ function openDetail(id: number) {
 .activity-icon {
   color: #e985bb;
   background: color-mix(in srgb, currentColor 14%, var(--sc-card-surface));
+}
+
+.activity-panel :deep(.activity-timeline) {
+  min-height: 0;
+  flex: 1;
 }
 
 .dashboard-mini-empty {

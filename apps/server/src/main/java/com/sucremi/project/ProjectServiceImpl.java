@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sucremi.common.api.PageResult;
 import com.sucremi.common.exception.BusinessException;
 import com.sucremi.common.exception.ResourceNotFoundException;
+import com.sucremi.activity.ProjectActivityService;
+import com.sucremi.activity.ProjectActivityType;
 import com.sucremi.identity.CurrentUserResolver;
 import com.sucremi.project.dto.ProjectCreateRequest;
 import com.sucremi.project.dto.ProjectQuery;
@@ -26,10 +28,12 @@ public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectMapper mapper;
     private final CurrentUserResolver currentUser;
+    private final ProjectActivityService activityService;
 
-    public ProjectServiceImpl(ProjectMapper mapper, CurrentUserResolver currentUser) {
+    public ProjectServiceImpl(ProjectMapper mapper, CurrentUserResolver currentUser, ProjectActivityService activityService) {
         this.mapper = mapper;
         this.currentUser = currentUser;
+        this.activityService = activityService;
     }
 
     @Override
@@ -44,6 +48,7 @@ public class ProjectServiceImpl implements ProjectService {
         p.setStatus(request.status() == null ? ProjectStatus.ACTIVE.name() : request.status());
         p.setProgress(request.progress() == null ? 0 : request.progress());
         mapper.insert(p);
+        activityService.record(p.getUserId(), p.getId(), ProjectActivityType.PROJECT_CREATED, "{}");
         return toResponse(requireOwned(p.getId()));
     }
 
@@ -56,6 +61,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional
     public ProjectResponse update(long id, ProjectUpdateRequest request) {
         validateStatus(request.status());
+        Project before = requireOwned(id);
         int rows = mapper.update(null, Wrappers.<Project>lambdaUpdate()
                 .eq(Project::getId, id)
                 .eq(Project::getUserId, currentUser.currentUserId())
@@ -66,6 +72,10 @@ public class ProjectServiceImpl implements ProjectService {
                 .set(Project::getProgress, request.progress()));
         if (rows == 0) {
             throw new ResourceNotFoundException("项目不存在");
+        }
+        if (!before.getStatus().equals(request.status())) {
+            activityService.record(before.getUserId(), id, ProjectActivityType.PROJECT_STATUS_CHANGED,
+                    "{\"from\":\"" + before.getStatus() + "\",\"to\":\"" + request.status() + "\"}");
         }
         return toResponse(requireOwned(id));
     }
@@ -108,6 +118,10 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     private void setArchivedAt(long id, LocalDateTime value) {
+        Project before = requireOwned(id);
+        boolean wasArchived = before.getArchivedAt() != null;
+        boolean willBeArchived = value != null;
+        if (wasArchived == willBeArchived) return;
         int rows = mapper.update(null, Wrappers.<Project>lambdaUpdate()
                 .eq(Project::getId, id)
                 .eq(Project::getUserId, currentUser.currentUserId())
@@ -115,6 +129,8 @@ public class ProjectServiceImpl implements ProjectService {
         if (rows == 0) {
             throw new ResourceNotFoundException("项目不存在");
         }
+        activityService.record(before.getUserId(), id,
+                willBeArchived ? ProjectActivityType.PROJECT_ARCHIVED : ProjectActivityType.PROJECT_UNARCHIVED, "{}");
     }
 
     private Project requireOwned(long id) {

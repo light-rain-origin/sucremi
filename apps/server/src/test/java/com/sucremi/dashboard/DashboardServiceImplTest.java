@@ -1,6 +1,7 @@
 package com.sucremi.dashboard;
 
 import com.sucremi.common.api.PageResult;
+import com.sucremi.activity.ProjectActivityService;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -46,13 +47,16 @@ class DashboardServiceImplTest {
     @Mock
     ProjectService projectService;
 
+    @Mock
+    ProjectActivityService activityService;
+
     final CurrentUserResolver currentUser = () -> 7L;
 
     DashboardServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new DashboardServiceImpl(projectMapper, projectService, currentUser);
+        service = new DashboardServiceImpl(projectMapper, projectService, currentUser, activityService);
     }
 
     @Test

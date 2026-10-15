@@ -1,12 +1,8 @@
 import { apiGet, apiPost, apiPut, type ApiResponse } from './http'
 import type { Project, ProjectForm } from '@/types/project'
+import type { PageResult } from '@/types/common'
 
-export interface PageResult<T> {
-  list: T[]
-  total: number
-  page: number
-  size: number
-}
+export type { PageResult } from '@/types/common'
 
 export interface ProjectListParams {
   q?: string

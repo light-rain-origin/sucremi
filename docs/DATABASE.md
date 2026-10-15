@@ -39,6 +39,13 @@ cd apps/server && ./mvnw spring-boot:run
 `user_id`、`project_id` 限定归属，并以 `(user_id, project_id, sort_order, id)` 索引支持列表排序。
 两表结构定义在 `V4__create_context_recovery.sql`，由 Flyway 自动迁移；不得手工建表。
 
+### `project_activity` —— 项目活动时间线（V5）
+
+记录项目创建、状态与归档变化、检查点创建、行动创建及行动状态变化。每条记录带 `user_id` 和
+`project_id`，使用 `(user_id, project_id, created_at, id)` 支持项目内倒序分页，使用
+`(user_id, created_at, id)` 支持首页最近活动。`event_type` 为稳定枚举，`metadata_version` 标记
+元数据结构版本；`metadata` 仅保存轻量 ID 或状态信息，不重复保存检查点、行动说明等正文。V5 不回填历史事件。
+
 ### `app_user` —— 工作台用户（用户数据隔离锚点）
 
 | 字段 | 类型 | 说明 |

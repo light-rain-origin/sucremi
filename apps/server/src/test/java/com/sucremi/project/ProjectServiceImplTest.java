@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sucremi.common.api.PageResult;
 import com.sucremi.common.exception.BusinessException;
 import com.sucremi.common.exception.ResourceNotFoundException;
+import com.sucremi.activity.ProjectActivityService;
 import com.sucremi.identity.CurrentUserResolver;
 import com.sucremi.project.dto.ProjectCreateRequest;
 import com.sucremi.project.dto.ProjectQuery;
@@ -42,6 +43,9 @@ class ProjectServiceImplTest {
     @Mock
     ProjectMapper mapper;
 
+    @Mock
+    ProjectActivityService activityService;
+
     // 固定当前用户 = 7
     final CurrentUserResolver currentUser = () -> 7L;
 
@@ -59,7 +63,7 @@ class ProjectServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new ProjectServiceImpl(mapper, currentUser);
+        service = new ProjectServiceImpl(mapper, currentUser, activityService);
     }
 
     private Project project(long id, long userId) {
@@ -104,31 +108,47 @@ class ProjectServiceImplTest {
 
     @Test
     void updateThrows404WhenNotOwned() {
-        when(mapper.update(isNull(), any())).thenReturn(0);
+        when(mapper.selectOne(any())).thenReturn(null);
         assertThrows(ResourceNotFoundException.class,
                 () -> service.update(99L, new ProjectUpdateRequest("N", null, null, "ACTIVE", 0)));
     }
 
     @Test
     void archiveThrows404WhenNotOwned() {
-        when(mapper.update(isNull(), any())).thenReturn(0);
+        when(mapper.selectOne(any())).thenReturn(null);
         assertThrows(ResourceNotFoundException.class, () -> service.archive(99L));
     }
 
     @Test
     void unarchiveThrows404WhenNotOwned() {
-        when(mapper.update(isNull(), any())).thenReturn(0);
+        when(mapper.selectOne(any())).thenReturn(null);
         assertThrows(ResourceNotFoundException.class, () -> service.unarchive(99L));
     }
 
     @Test
     void archiveSucceedsWhenOwned() {
+        Project archived = project(1L, 7L);
+        archived.setArchivedAt(java.time.LocalDateTime.now());
+        when(mapper.selectOne(any())).thenReturn(project(1L, 7L), archived);
         when(mapper.update(isNull(), any())).thenReturn(1);
 
         service.archive(1L);
         service.unarchive(1L);
 
         verify(mapper, times(2)).update(isNull(), any());
+        verify(activityService, times(2)).record(org.mockito.ArgumentMatchers.eq(7L), org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq("{}"));
+    }
+
+    /** 项目状态未变化时不新增时间线事件。 */
+    @Test
+    void unchangedProjectStatusDoesNotRecordActivity() {
+        when(mapper.selectOne(any())).thenReturn(project(1L, 7L), project(1L, 7L));
+        when(mapper.update(isNull(), any())).thenReturn(1);
+
+        service.update(1L, new ProjectUpdateRequest("P", null, null, "ACTIVE", 0));
+
+        verify(activityService, org.mockito.Mockito.never()).record(any(Long.class), any(Long.class), any(), any());
     }
 
     @Test

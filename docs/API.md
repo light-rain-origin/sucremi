@@ -83,6 +83,7 @@
 |------|------|------|
 | GET | `/api/v1/dashboard/summary` | 当前用户的统计 + 最近项目 |
 | GET | `/api/v1/dashboard/project-flow` | 当前用户未归档项目的状态计数与进度列表 |
+| GET | `/api/v1/dashboard/recent-activities` | 当前用户最近 5 条项目活动；`size` 可调小，最多返回 5 条 |
 
 `data`：`{ totalProjects, activeProjects, pausedProjects, doneProjects, archivedProjects, recentProjects[] }`。
 计数均限当前用户；前四项为未归档项目，`archivedProjects` 为已归档数；`recentProjects` 为最近更新的前 5 个未归档项目（`ProjectResponse` 列表）。
@@ -90,6 +91,8 @@
 `/dashboard/project-flow` 的 `data`：`{ unfinishedCount, ongoingCount, completedCount, projects[] }`。
 仅返回当前用户的未归档项目，按更新时间倒序；`unfinishedCount` 包含进行中与已暂停项目，
 `ongoingCount` 只统计进行中项目，`completedCount` 统计已完成项目；`projects` 为对应的 `ProjectResponse` 列表。
+
+`/dashboard/recent-activities` 返回活动数组，元素包含 `id/projectId/projectName/eventType/metadataVersion/metadata/createdAt`。
 
 ### 项目上下文恢复
 
@@ -113,3 +116,14 @@
 `id/projectId/title/details/status/sortOrder/createdAt/updatedAt/completedAt`。聚合接口返回
 `{ project, latestCheckpoint, actions, recoverySummary }`；没有检查点时 `latestCheckpoint` 与
 `recoverySummary` 为空，行动列表仍可独立使用。
+
+### 项目活动时间线
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/v1/projects/{projectId}/activities` | 项目活动分页查询；参数：`page`(默认 1)、`size`(默认 20，上限 100)、`type`(可选稳定事件类型) |
+
+响应 `data` 为 `PageResult`，活动包含 `id/projectId/projectName/eventType/metadataVersion/metadata/createdAt`；`metadata` 是 JSON 字符串。
+事件类型包括 `PROJECT_CREATED`、`PROJECT_STATUS_CHANGED`、`PROJECT_ARCHIVED`、`PROJECT_UNARCHIVED`、
+`CHECKPOINT_CREATED`、`ACTION_CREATED`、`ACTION_COMPLETED`、`ACTION_REOPENED`。元数据首版为版本 1，
+仅保存关联记录 ID 或状态变化，不复制检查点、行动说明等正文；历史数据不回填。

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.sucremi.common.exception.ResourceNotFoundException;
+import com.sucremi.activity.ProjectActivityService;
 import com.sucremi.identity.CurrentUserResolver;
 import com.sucremi.project.Project;
 import com.sucremi.project.ProjectMapper;
@@ -30,6 +31,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
 
 /**
  * 恢复服务单元测试，覆盖数据归属、状态更新、排序及空检查点语义。
@@ -39,6 +41,7 @@ class RecoveryServiceImplTest {
     @Mock ProjectMapper projectMapper;
     @Mock ProjectCheckpointMapper checkpointMapper;
     @Mock ProjectActionMapper actionMapper;
+    @Mock ProjectActivityService activityService;
 
     private final CurrentUserResolver currentUser = () -> 7L;
     private RecoveryServiceImpl service;
@@ -55,7 +58,7 @@ class RecoveryServiceImplTest {
     /** 为每个测试创建新的服务实例。 */
     @BeforeEach
     void setUp() {
-        service = new RecoveryServiceImpl(projectMapper, checkpointMapper, actionMapper, currentUser);
+        service = new RecoveryServiceImpl(projectMapper, checkpointMapper, actionMapper, currentUser, activityService);
     }
 
     /** 检查点创建时应注入可信用户和项目归属，并清理摘要首尾空白。 */
@@ -75,6 +78,25 @@ class RecoveryServiceImplTest {
         assertEquals(3L, captor.getValue().getProjectId());
         assertEquals("当前进展", captor.getValue().getSummary());
         assertEquals(11L, response.id());
+        verify(activityService).record(7L, 3L, com.sucremi.activity.ProjectActivityType.CHECKPOINT_CREATED,
+                "{\"checkpointId\":11}");
+    }
+
+    /** 重复设置为同一行动状态时不重复写事件或更新记录。 */
+    @Test
+    void unchangedActionStatusDoesNotRecordActivity() {
+        when(projectMapper.selectOne(any())).thenReturn(project(3L, 7L));
+        ProjectAction action = new ProjectAction();
+        action.setId(8L);
+        action.setProjectId(3L);
+        action.setUserId(7L);
+        action.setStatus("TODO");
+        when(actionMapper.selectOne(any())).thenReturn(action);
+
+        service.updateActionStatus(3L, 8L, "TODO");
+
+        verify(actionMapper, never()).update(any(), any());
+        verify(activityService, never()).record(any(Long.class), any(Long.class), any(), any());
     }
 
     /** 检查点列表查询必须同时按用户和项目过滤。 */
@@ -159,6 +181,8 @@ class RecoveryServiceImplTest {
         assertTrue(where.contains("id"), where);
         assertEquals("DONE", response.status());
         assertTrue(response.completedAt() != null);
+        verify(activityService).record(7L, 3L, com.sucremi.activity.ProjectActivityType.ACTION_COMPLETED,
+                "{\"actionId\":21}");
     }
 
     /** 不能更新其他用户或其他项目的行动。 */

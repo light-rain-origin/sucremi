@@ -2,6 +2,8 @@ package com.sucremi.dashboard;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.sucremi.activity.ProjectActivityService;
+import com.sucremi.activity.dto.ProjectActivityResponse;
 import com.sucremi.identity.CurrentUserResolver;
 import com.sucremi.project.Project;
 import com.sucremi.project.ProjectMapper;
@@ -26,12 +28,14 @@ public class DashboardServiceImpl implements DashboardService {
     private final ProjectMapper projectMapper;
     private final ProjectService projectService;
     private final CurrentUserResolver currentUser;
+    private final ProjectActivityService activityService;
 
     public DashboardServiceImpl(ProjectMapper projectMapper, ProjectService projectService,
-                                CurrentUserResolver currentUser) {
+                                CurrentUserResolver currentUser, ProjectActivityService activityService) {
         this.projectMapper = projectMapper;
         this.projectService = projectService;
         this.currentUser = currentUser;
+        this.activityService = activityService;
     }
 
     @Override
@@ -76,6 +80,11 @@ public class DashboardServiceImpl implements DashboardService {
                 .toList();
 
         return new ProjectFlowSummary(unfinished, ongoing, completed, responses);
+    }
+
+    @Override
+    public List<ProjectActivityResponse> recentActivities(int size) {
+        return activityService.recent(Math.min(size, RECENT_SIZE));
     }
 
     private long count(long uid, Consumer<LambdaQueryWrapper<Project>> extra) {

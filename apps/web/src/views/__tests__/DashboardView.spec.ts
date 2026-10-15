@@ -19,13 +19,19 @@ vi.mock('@/api/project', () => ({
 vi.mock('@/api/recovery', () => ({
   getProjectRecovery: vi.fn<typeof import('@/api/recovery').getProjectRecovery>(),
 }))
+vi.mock('@/api/activity', () => ({
+  getRecentActivities: vi.fn<typeof import('@/api/activity').getRecentActivities>(),
+  getProjectActivities: vi.fn<typeof import('@/api/activity').getProjectActivities>(),
+}))
 
 import { getDashboardSummary, getProjectFlow } from '@/api/dashboard'
 import { getProjectRecovery } from '@/api/recovery'
+import { getRecentActivities } from '@/api/activity'
 
 const mocked = vi.mocked(getDashboardSummary)
 const mockedProjectFlow = vi.mocked(getProjectFlow)
 const mockedRecovery = vi.mocked(getProjectRecovery)
+const mockedActivities = vi.mocked(getRecentActivities)
 
 function render() {
   const router = createRouter({
@@ -67,6 +73,8 @@ describe('DashboardView', () => {
     mocked.mockReset()
     mockedProjectFlow.mockReset()
     mockedRecovery.mockReset()
+    mockedActivities.mockReset()
+    mockedActivities.mockResolvedValue({ code: 0, message: 'OK', data: [], requestId: 'activity', timestamp: 1 })
     mockedRecovery.mockImplementation(async (projectId) => ({
       code: 0,
       message: 'OK',

@@ -1,6 +1,7 @@
 package com.sucremi.dashboard;
 
 import com.sucremi.project.dto.ProjectResponse;
+import com.sucremi.activity.dto.ProjectActivityResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -71,5 +72,17 @@ class DashboardControllerTest {
                 .andExpect(jsonPath("$.data.completedCount").value(1))
                 .andExpect(jsonPath("$.data.projects[0].id").value(12))
                 .andExpect(jsonPath("$.data.projects[0].progress").value(68));
+    }
+
+    /** 首页近期活动接口返回轻量项目活动列表。 */
+    @Test
+    void recentActivitiesReturnsCurrentActivityItems() throws Exception {
+        when(dashboardService.recentActivities(5)).thenReturn(List.of(new ProjectActivityResponse(
+                2L, 12L, "时间线项目", "CHECKPOINT_CREATED", 1, "{}", null)));
+
+        mockMvc.perform(get("/api/v1/dashboard/recent-activities"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].eventType").value("CHECKPOINT_CREATED"))
+                .andExpect(jsonPath("$.data[0].projectName").value("时间线项目"));
     }
 }

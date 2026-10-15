@@ -8,6 +8,7 @@ import StatusTag from '@/components/StatusTag.vue'
 import ProgressBar from '@/components/ProgressBar.vue'
 import ProjectFormDialog from '@/components/ProjectFormDialog.vue'
 import { formatDateTime } from '@/utils/datetime'
+import ProjectActivityTimeline from '@/components/ProjectActivityTimeline.vue'
 
 const route = useRoute()
 const id = route.params.id as string
@@ -121,9 +122,12 @@ async function toggleArchive() {
             打开恢复上下文 <span aria-hidden="true">→</span>
           </RouterLink>
         </el-card>
-        <el-card v-for="s in ['进度 / 活动时间线', '决策记录 & 知识资料']"
-                 :key="s" shadow="never" class="future-card">
-          <div class="future-title">{{ s }}</div>
+        <el-card shadow="never" class="future-card activity-card">
+          <div class="future-title">项目活动时间线</div>
+          <ProjectActivityTimeline :project-id="project.id" />
+        </el-card>
+        <el-card shadow="never" class="future-card">
+          <div class="future-title">决策记录 & 知识资料</div>
           <div class="future-hint">即将推出</div>
         </el-card>
       </div>
@@ -209,6 +213,7 @@ async function toggleArchive() {
   border-radius: var(--sc-radius-lg);
   border-style: dashed;
 }
+.activity-card { grid-column: 1 / -1; border-style: solid; }
 .recovery-card {
   border-style: solid;
   border-color: color-mix(in srgb, var(--sc-brand-alt) 38%, var(--sc-border-soft));

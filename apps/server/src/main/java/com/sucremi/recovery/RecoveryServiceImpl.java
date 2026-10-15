@@ -3,6 +3,8 @@ package com.sucremi.recovery;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.sucremi.common.exception.BusinessException;
 import com.sucremi.common.exception.ResourceNotFoundException;
+import com.sucremi.activity.ProjectActivityService;
+import com.sucremi.activity.ProjectActivityType;
 import com.sucremi.identity.CurrentUserResolver;
 import com.sucremi.project.Project;
 import com.sucremi.project.ProjectMapper;
@@ -35,14 +37,17 @@ public class RecoveryServiceImpl implements RecoveryService {
     private final ProjectCheckpointMapper checkpointMapper;
     private final ProjectActionMapper actionMapper;
     private final CurrentUserResolver currentUser;
+    private final ProjectActivityService activityService;
 
     /** 创建恢复服务并注入项目、检查点、行动数据访问及当前身份解析器。 */
     public RecoveryServiceImpl(ProjectMapper projectMapper, ProjectCheckpointMapper checkpointMapper,
-                               ProjectActionMapper actionMapper, CurrentUserResolver currentUser) {
+                               ProjectActionMapper actionMapper, CurrentUserResolver currentUser,
+                               ProjectActivityService activityService) {
         this.projectMapper = projectMapper;
         this.checkpointMapper = checkpointMapper;
         this.actionMapper = actionMapper;
         this.currentUser = currentUser;
+        this.activityService = activityService;
     }
 
     /** 校验项目归属后创建新的检查点快照。 */
@@ -59,6 +64,8 @@ public class RecoveryServiceImpl implements RecoveryService {
         checkpoint.setBlockers(trimToNull(request.blockers()));
         checkpoint.setCreatedAt(LocalDateTime.now());
         checkpointMapper.insert(checkpoint);
+        activityService.record(userId, projectId, ProjectActivityType.CHECKPOINT_CREATED,
+                "{\"checkpointId\":" + checkpoint.getId() + "}");
         return toResponse(checkpoint);
     }
 
@@ -128,6 +135,8 @@ public class RecoveryServiceImpl implements RecoveryService {
         action.setCreatedAt(LocalDateTime.now());
         action.setUpdatedAt(action.getCreatedAt());
         actionMapper.insert(action);
+        activityService.record(userId, projectId, ProjectActivityType.ACTION_CREATED,
+                "{\"actionId\":" + action.getId() + "}");
         return toResponse(action);
     }
 
@@ -167,6 +176,7 @@ public class RecoveryServiceImpl implements RecoveryService {
             throw new BusinessException(40000, "非法的行动状态");
         }
         ProjectAction action = requireOwnedAction(projectId, actionId, userId);
+        if (status.equals(action.getStatus())) return toResponse(action);
         LocalDateTime now = LocalDateTime.now();
         int rows = actionMapper.update(null, Wrappers.<ProjectAction>lambdaUpdate()
                 .eq(ProjectAction::getId, actionId)
@@ -179,6 +189,9 @@ public class RecoveryServiceImpl implements RecoveryService {
         action.setStatus(status);
         action.setCompletedAt(DONE.equals(status) ? now : null);
         action.setUpdatedAt(now);
+        activityService.record(userId, projectId,
+                DONE.equals(status) ? ProjectActivityType.ACTION_COMPLETED : ProjectActivityType.ACTION_REOPENED,
+                "{\"actionId\":" + actionId + "}");
         return toResponse(action);
     }
 
