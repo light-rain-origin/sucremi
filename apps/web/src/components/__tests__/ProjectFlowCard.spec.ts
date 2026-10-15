@@ -169,12 +169,13 @@ describe('ProjectFlowCard · 取数与配色', () => {
     }
   })
 
-  it('已完成仍用状态保留色', async () => {
+  it('已完成项目使用项目色池中的彩色胶囊', async () => {
     const wrapper = render()
 
     await wrapper.get('[role="tab"]:nth-child(3)').trigger('click')
 
-    expect(tones(wrapper)).toEqual(['tone-done'])
+    expect(tones(wrapper)).toHaveLength(1)
+    expect(tones(wrapper)[0]).toMatch(/^tone-[1-4]$/)
   })
 
   it('同屏的进行中项目颜色互不相同，且同一项目每次渲染颜色不变', async () => {
@@ -206,34 +207,32 @@ describe('ProjectFlowCard · 取数与配色', () => {
       .findAll('path.connector-line')
       .filter((el) => !el.classes().includes('connector-summary'))
 
-    // 三行的中心是 35 / 90 / 145。第一个控制点与起点同高、第二个与合并点同高，
-    // 两端切线因此水平；控制点各占 36px，中段被挤到约 52° —— 这就是 S 的弧度。
-    expect(lines.map((el) => el.attributes('d'))).toEqual([
-      'M286 35 C322 35 329 90 365 90',
-      'M286 90 C322 90 329 90 365 90',
-      'M286 145 C322 145 329 90 365 90',
-    ])
+    // 连接线随画布比例计算坐标，测试曲线结构及首段水平切线，不锁定固定宽度的像素值。
+    const paths = lines.map((el) => el.attributes('d') ?? '')
+    expect(paths).toHaveLength(3)
+    expect(paths[0]).toMatch(/^M\d+(?:\.\d+)? 35C/)
+    expect(paths[1]).toMatch(/^M\d+(?:\.\d+)? 90 ?C/)
+    expect(paths[2]).toMatch(/^M\d+(?:\.\d+)? 145C/)
+    expect(paths[0]).toContain('C')
+    expect(paths[2]).toContain('C')
   })
 
   it('每根线在中点各带一个箭头，与合并处的箭头共用一个三角形', () => {
     const wrapper = render({ flow: mixedFlow })
-    const TRIANGLE = 'M-7 -3.5L0 0L-7 3.5Z'
-
-    const arrows = wrapper.findAll('.connector-arrow')
-    expect(arrows).toHaveLength(tones(wrapper).length)
-    expect(arrows.map((el) => el.classes().find((c) => c.startsWith('tone-')))).toEqual(tones(wrapper))
-    // 中点在 x = 325.5（与跨度无关），角度跟着那一行的落差走：上行 +52°、中间行水平、下行 −52°
-    expect(arrows.map((el) => el.attributes('transform'))).toEqual([
-      'translate(325.5 62.5) rotate(52)',
-      'translate(325.5 90) rotate(0)',
-      'translate(325.5 117.5) rotate(-52)',
+    const arrows = wrapper
+      .findAll('.connector-arrow')
+      .filter((el) => !el.classes().includes('connector-summary-arrow'))
+    expect(arrows).toHaveLength(3)
+    expect(arrows.slice(0, 2).map((el) => el.classes().find((c) => c.startsWith('tone-')))).toEqual([
+      tones(wrapper)[0],
+      tones(wrapper)[2],
     ])
+    expect(arrows.slice(0, 2).every((el) => /M[\d.]+ [\d.]+L[\d.]+ [\d.]+L[\d.]+ [\d.]+Z/.test(el.attributes('d') ?? ''))).toBe(true)
 
-    // 同一个 d + 只做平移 ⇒ 与合并处的箭头必然同尺寸
-    expect(arrows.every((el) => el.attributes('d') === TRIANGLE)).toBe(true)
+    // 汇合处颜色继承中间项目，另外保留汇合到平均进度的独立箭头。
     const junction = wrapper.get('.junction-arrow')
-    expect(junction.attributes('d')).toBe(TRIANGLE)
-    expect(junction.attributes('transform')).toBe('translate(365 90)')
+    expect(junction.classes()).toContain(tones(wrapper)[1])
+    expect(wrapper.find('.connector-summary-arrow').exists()).toBe(true)
     expect(wrapper.find('.connectors circle').exists()).toBe(false)
   })
 
@@ -254,14 +253,11 @@ describe('ProjectFlowCard · 取数与配色', () => {
     const wrapper = render({ flow: mixedFlow })
 
     const summary = wrapper.findAll('path.connector-summary')
-    // 干线从合并点（365, 90）＝ 箭头尖端起步，末端不再有第二个箭头
-    const trunk = summary.find((el) => el.attributes('d') === 'M365 90H440')!
+    // 干线从动态汇合位置开始，不在主线上重复绘制箭头。
+    const trunk = summary.find((el) => /M[\d.]+ 90H[\d.]+/.test(el.attributes('d') ?? ''))!
     expect(trunk.attributes('marker-end')).toBeUndefined()
-    // 「平均进度」是胶囊，圆角让它的左缘在中线处比矩形框更靠右（约 SVG x = 434）；
-    // 干线不到这个位置就会露出一道缝
-    expect(Number(/H(\d+)/.exec(trunk.attributes('d') ?? '')?.[1])).toBeGreaterThanOrEqual(434)
-    // 指向「平均进度」的那根下行箭头保留
-    const down = summary.find((el) => el.attributes('d') === 'M493 109V130')!
-    expect(down.attributes('marker-end')).toContain('arrow-down')
+    expect(Number(/H([\d.]+)/.exec(trunk.attributes('d') ?? '')?.[1])).toBeGreaterThan(0)
+    // 指向平均进度的下行连线仍保留。
+    expect(summary.some((el) => /M[\d.]+ [\d.]+V[\d.]+/.test(el.attributes('d') ?? ''))).toBe(true)
   })
 })

@@ -16,11 +16,16 @@ vi.mock('@/api/project', () => ({
   archiveProject: vi.fn<typeof import('@/api/project').archiveProject>(),
   unarchiveProject: vi.fn<typeof import('@/api/project').unarchiveProject>(),
 }))
+vi.mock('@/api/recovery', () => ({
+  getProjectRecovery: vi.fn<typeof import('@/api/recovery').getProjectRecovery>(),
+}))
 
 import { getDashboardSummary, getProjectFlow } from '@/api/dashboard'
+import { getProjectRecovery } from '@/api/recovery'
 
 const mocked = vi.mocked(getDashboardSummary)
 const mockedProjectFlow = vi.mocked(getProjectFlow)
+const mockedRecovery = vi.mocked(getProjectRecovery)
 
 function render() {
   const router = createRouter({
@@ -29,6 +34,7 @@ function render() {
       { path: '/', component: { template: '<div />' } },
       { path: '/projects', component: { template: '<div />' } },
       { path: '/projects/:id', component: { template: '<div />' } },
+      { path: '/projects/:id/recovery', component: { template: '<div />' } },
     ],
   })
   return mount(DashboardView, { global: { plugins: [ElementPlus, createPinia(), router] } })
@@ -60,6 +66,26 @@ describe('DashboardView', () => {
     setActivePinia(createPinia())
     mocked.mockReset()
     mockedProjectFlow.mockReset()
+    mockedRecovery.mockReset()
+    mockedRecovery.mockImplementation(async (projectId) => ({
+      code: 0,
+      message: 'OK',
+      data: {
+        project: summary.recentProjects.find((project) => project.id === Number(projectId)) ?? summary.recentProjects[0]!,
+        latestCheckpoint: {
+          id: 12,
+          projectId: Number(projectId),
+          summary: '恢复卡片测试进度',
+          currentFocus: '完善页面',
+          blockers: null,
+          createdAt: '2026-10-14T12:00:00',
+        },
+        actions: [],
+        recoverySummary: '恢复卡片测试进度 当前关注：完善页面',
+      },
+      requestId: 'recovery',
+      timestamp: 1,
+    }))
     mockedProjectFlow.mockResolvedValue({
       code: 0,
       message: 'OK',
@@ -83,19 +109,26 @@ describe('DashboardView', () => {
     for (const label of ['全部项目', '进行中', '已暂停', '已完成', '已归档']) {
       expect(text).toContain(label)
     }
-    expect(text).toContain('Hello，欢迎回来！')
+    expect(text).toContain('早上好，今天也慢慢来！')
     expect(text).toContain('4')
     expect(text).toContain('3')
     expect(text).toContain('最近项目')
-    expect(text).toContain('项目状态与整体进度')
-    expect(text).toContain('今日继续')
+    expect(text).toContain('状态与整体进度')
+    expect(text).toContain('继续工作')
     expect(text).toContain('继续这个项目')
     expect(text).toContain('最近更新')
-    expect(text).toContain('快捷入口')
+    expect(text).toContain('恢复卡片测试进度')
     expect(text).toContain('20%')
   })
 
   it('shows the empty state with a create entry when there is no project', async () => {
+    mockedProjectFlow.mockResolvedValue({
+      code: 0,
+      message: 'OK',
+      data: { unfinishedCount: 0, ongoingCount: 0, completedCount: 0, projects: [] },
+      requestId: 'flow',
+      timestamp: 1,
+    })
     mocked.mockResolvedValue({
       code: 0,
       message: 'OK',
@@ -106,20 +139,21 @@ describe('DashboardView', () => {
     const wrapper = render()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('还没有项目，创建第一个吧')
+    expect(wrapper.text()).toContain('先创建一个项目，记录下每次努力的起点')
   })
 
-  it('surfaces a backend error message', async () => {
-    mocked.mockResolvedValue({
+  it('surfaces a project flow API error in the bottom recovery card', async () => {
+    mockedProjectFlow.mockResolvedValue({
       code: 50000,
-      message: '服务器开小差了',
-      data: null as unknown as DashboardSummary,
+      message: '项目进度读取失败',
+      data: null as unknown as import('@/types/dashboard').ProjectFlowSummary,
       requestId: 'r',
       timestamp: 1,
     })
+    mocked.mockResolvedValue({ code: 0, message: 'OK', data: summary, requestId: 'r', timestamp: 1 })
     const wrapper = render()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('服务器开小差了')
+    expect(wrapper.text()).toContain('项目进度读取失败')
   })
 })

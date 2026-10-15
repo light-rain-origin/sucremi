@@ -93,6 +93,7 @@ async function toggleArchive() {
           <el-tag v-if="project.archived" type="info" effect="plain" round>已归档</el-tag>
         </div>
         <div class="head-ops">
+          <RouterLink class="recovery-entry" :to="`/projects/${project.id}/recovery`">恢复上下文</RouterLink>
           <el-button @click="editVisible = true">编辑</el-button>
           <el-button :type="project.archived ? 'primary' : 'default'" @click="toggleArchive">
             {{ project.archived ? '取消归档' : '归档' }}
@@ -154,7 +155,20 @@ async function toggleArchive() {
 }
 .head-ops {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+.recovery-entry {
+  padding: 8px 13px;
+  border: 1px solid var(--sc-border-strong);
+  border-radius: var(--sc-radius-pill);
+  color: var(--sc-brand-alt-strong);
+  font-size: var(--sc-font-size-md);
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.recovery-entry:hover {
+  border-color: var(--sc-brand-alt);
+  background: color-mix(in srgb, var(--sc-brand-alt) 8%, var(--sc-card-surface));
 }
 .overview {
   border-radius: var(--sc-radius-lg);

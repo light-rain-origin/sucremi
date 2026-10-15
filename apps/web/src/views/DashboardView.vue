@@ -7,6 +7,7 @@ import DashboardBanner from '@/components/DashboardBanner.vue'
 import DashboardStatsCards from '@/components/DashboardStatsCards.vue'
 import DashboardProjectProgress from '@/components/DashboardProjectProgress.vue'
 import ProjectFlowCard from '@/components/ProjectFlowCard.vue'
+import ContinueWorkCard from '@/components/ContinueWorkCard.vue'
 
 const router = useRouter()
 const dashboard = useDashboardStore()
@@ -65,6 +66,12 @@ function openDetail(id: number) {
         </section>
       </aside>
     </div>
+    <ContinueWorkCard
+      :projects="projectFlow?.projects ?? []"
+      :projects-loading="projectFlowLoading || !projectFlow"
+      :projects-error="projectFlowError"
+      @retry-projects="dashboard.fetchProjectFlow()"
+    />
   </section>
 </template>
 

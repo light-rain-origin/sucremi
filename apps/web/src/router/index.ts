@@ -3,6 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import ProjectsView from '@/views/ProjectsView.vue'
 import ProjectDetailView from '@/views/ProjectDetailView.vue'
+import RecoveryView from '@/views/RecoveryView.vue'
 import EmptyModuleView from '@/views/EmptyModuleView.vue'
 
 const router = createRouter({
@@ -38,6 +39,12 @@ const router = createRouter({
           name: 'settings',
           component: EmptyModuleView,
           meta: { title: '系统设置' },
+        },
+        {
+          path: 'projects/:id/recovery',
+          name: 'project-recovery',
+          component: RecoveryView,
+          meta: { title: '恢复上下文' },
         },
         {
           path: 'projects/:id',

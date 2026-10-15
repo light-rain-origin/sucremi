@@ -18,6 +18,11 @@ function makeRouter(): Router {
         children: [
           { path: '', name: 'dashboard', component: { template: '<div />' } },
           { path: 'projects', name: 'projects', component: { template: '<div />' } },
+          { path: 'development-records', component: { template: '<div />' } },
+          { path: 'knowledge', component: { template: '<div />' } },
+          { path: 'remi', component: { template: '<div />' } },
+          { path: 'library', component: { template: '<div />' } },
+          { path: 'settings', component: { template: '<div />' } },
           { path: 'projects/:id', name: 'project-detail', component: { template: '<div />' } },
         ],
       },
@@ -57,20 +62,15 @@ describe('AppSidebar', () => {
     ])
   })
 
-  it('只有已实现路由的两项可跳转，其余是不可点的占位项', async () => {
+  it('七个导航项都使用可跳转路由', async () => {
     const wrapper = await mountAt('/')
     const items = wrapper.findAll('.nav-item')
     expect(items).toHaveLength(7)
 
     const linked = items.filter((el) => el.element.tagName === 'A')
-    expect(linked.map((el) => el.text().trim())).toEqual(['首页概览', '项目管理'])
-
-    const inert = items.filter((el) => el.element.tagName === 'SPAN')
-    expect(inert).toHaveLength(5)
-    for (const el of inert) {
-      expect(el.attributes('aria-disabled')).toBe('true')
-      expect(el.classes()).toContain('nav-item-static')
-    }
+    expect(linked.map((el) => el.text().trim())).toEqual([
+      '首页概览', '项目管理', '开发记录', '知识沉淀', '魔法蕾米', '资料文库', '系统设置',
+    ])
   })
 
   it('每条导航项都带图标轮廓与右侧标记槽', async () => {
@@ -100,14 +100,14 @@ describe('AppSidebar', () => {
     expect(labelsOf(await mountAt('/projects/42'), '.nav-item.active')).toEqual(['项目管理'])
   })
 
-  it('点击可跳转项会通知父级收起抽屉', async () => {
+  it('点击导航项会通知父级收起抽屉', async () => {
     const wrapper = await mountAt('/')
     const items = wrapper.findAll('.nav-item')
     await items[1]!.trigger('click')
     expect(wrapper.emitted('navigate')).toHaveLength(1)
 
-    // 占位项不可点，不该发事件
+    // 侧栏末尾的系统设置入口同样可以导航。
     await items[6]!.trigger('click')
-    expect(wrapper.emitted('navigate')).toHaveLength(1)
+    expect(wrapper.emitted('navigate')).toHaveLength(2)
   })
 })
