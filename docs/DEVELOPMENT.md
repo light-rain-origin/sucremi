@@ -67,6 +67,8 @@ cd apps/web && npm run test:unit -- --run
 | 后端 · 接口 | `HealthApiTests` | `/health` 响应结构、`X-Request-Id` 透传 |
 | 后端 · 接口 | `ProjectControllerTest` | 路由、参数校验 400、不存在 404、非法 JSON 400 |
 | 后端 · 接口 | `DashboardControllerTest` | `/dashboard/summary` 字段结构（前端类型依赖） |
+| 后端 · 恢复接口 | `RecoveryControllerTest` | 检查点、行动、恢复聚合接口及参数校验 |
+| 后端 · 恢复服务 | `RecoveryServiceImplTest` | 用户隔离、项目归属、最新检查点、行动状态与排序 |
 | 后端 · 服务 | `ProjectServiceImplTest` | 所有权注入、跨用户/不存在 404、状态白名单、分页夹取、列表带 `user_id` 过滤 |
 | 后端 · 服务 | `DashboardServiceImplTest` | 计数装配、复用项目服务取最近项目 |
 | 后端 · 领域 | `ProjectStatusTest` / `IdentityResolverTest` | 状态白名单、开发身份与拒绝式兜底 |
@@ -74,6 +76,7 @@ cd apps/web && npm run test:unit -- --run
 | 前端 · 布局 | `AppSidebar` | 导航渲染 |
 | 前端 · 状态 | `stores/project` / `stores/dashboard` | 列表/创建/归档成功与失败路径、错误信息透出 |
 | 前端 · 页面 | `ProjectsView` / `DashboardView` | 列表与空态、过滤器防抖与重置页码、翻页、统计卡与最近项目 |
+| 前端 · 恢复 | `ContinueWorkCard` / `RecoveryView` | 首页继续工作卡片、检查点与行动交互及空态/错误态 |
 | 前端 · 工具 | `datetime` | 空值、正常格式化、非法输入回退 |
 
 未纳入单元测试的部分：MyBatis-Plus 生成的 SQL 与 Flyway 迁移只在**真实 MySQL** 上验证

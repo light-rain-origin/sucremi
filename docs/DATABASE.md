@@ -28,6 +28,17 @@ cd apps/server && ./mvnw spring-boot:run
 
 ## 当前表结构
 
+### `project_checkpoint` —— 项目开发检查点（V4）
+
+保存用户手动记录的开发状态快照，包含摘要、当前关注点、阻塞事项和创建时间。通过 `user_id`、
+`project_id` 归属到用户和项目，并以 `(user_id, project_id, created_at, id)` 索引支持读取最新记录。
+
+### `project_action` —— 项目下一步行动（V4）
+
+保存用户维护的下一步行动，包含标题、说明、TODO/DONE 状态、项目内排序和完成时间。通过
+`user_id`、`project_id` 限定归属，并以 `(user_id, project_id, sort_order, id)` 索引支持列表排序。
+两表结构定义在 `V4__create_context_recovery.sql`，由 Flyway 自动迁移；不得手工建表。
+
 ### `app_user` —— 工作台用户（用户数据隔离锚点）
 
 | 字段 | 类型 | 说明 |

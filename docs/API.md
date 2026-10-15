@@ -90,3 +90,24 @@
 `/dashboard/project-flow` 的 `data`：`{ unfinishedCount, ongoingCount, completedCount, projects[] }`。
 仅返回当前用户的未归档项目，按更新时间倒序；`unfinishedCount` 包含进行中与已暂停项目，
 `ongoingCount` 只统计进行中项目，`completedCount` 统计已完成项目；`projects` 为对应的 `ProjectResponse` 列表。
+
+### 项目上下文恢复
+
+所有恢复接口均位于项目资源下，仅操作当前用户拥有的项目；跨用户或不存在的项目统一返回 404。
+检查点和行动由用户在项目恢复页手动保存，恢复摘要只根据最新检查点及行动规则式聚合，不会生成未保存的进度。
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/v1/projects/{projectId}/checkpoints` | 保存检查点；body：`summary`（必填，≤10000）、`currentFocus`（可选，≤255）、`blockers`（可选，≤10000） |
+| GET | `/api/v1/projects/{projectId}/checkpoints` | 按时间倒序读取检查点历史 |
+| GET | `/api/v1/projects/{projectId}/checkpoints/latest` | 读取最新检查点；无记录时 `data` 为空 |
+| POST | `/api/v1/projects/{projectId}/actions` | 新建行动；body：`title`（必填，≤200）、`details`（可选，≤1000） |
+| GET | `/api/v1/projects/{projectId}/actions` | 按 `sortOrder` 读取行动 |
+| PATCH | `/api/v1/projects/{projectId}/actions/{actionId}/status` | 更新状态；body：`{"status":"TODO"}` 或 `{"status":"DONE"}` |
+| PUT | `/api/v1/projects/{projectId}/actions/order` | 更新顺序；body：`{"actionIds":[1,2]}`，须包含该项目全部行动 ID 且不可重复 |
+| GET | `/api/v1/projects/{projectId}/recovery` | 获取项目、最新检查点、行动及规则式恢复摘要 |
+
+检查点响应字段为 `id/projectId/summary/currentFocus/blockers/createdAt`；行动响应字段为
+`id/projectId/title/details/status/sortOrder/createdAt/updatedAt/completedAt`。聚合接口返回
+`{ project, latestCheckpoint, actions, recoverySummary }`；没有检查点时 `latestCheckpoint` 与
+`recoverySummary` 为空，行动列表仍可独立使用。
