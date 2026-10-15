@@ -96,6 +96,8 @@
   --sc-hero-glow: radial-gradient(circle, rgba(245, 168, 203, 0.42), transparent 68%);
   /* 页面共用底图渐变与 public/exports/统一背景.html 中的 SVG 背景一致。 */
   --sc-backdrop: linear-gradient(135deg, #fff4fa 0%, #f8f3ff 52%, #fffafd 100%);
+  --sc-background-glow-color: #d9d0ff;
+  --sc-background-glow-opacity: 0.6715686;
   /*
    * 角色插画装饰位（默认关闭）。
    * 素材到位后由皮肤同时给出 --sc-character-image 与 --sc-character-height 才会显示；
@@ -284,6 +286,8 @@ html[data-color-mode='dark'] {
   --sc-nav-accent: #d990c2;
   --sc-hero-glow: radial-gradient(circle, rgba(191, 123, 178, 0.22), transparent 68%);
   --sc-backdrop: linear-gradient(135deg, #211d2b 0%, #282236 52%, #211f30 100%);
+  --sc-background-glow-color: #806b9b;
+  --sc-background-glow-opacity: 0.18;
   --sc-swatch-ring: rgba(255, 255, 255, 0.12);
   --sc-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.18);
   --sc-shadow-md: 0 8px 22px rgba(0, 0, 0, 0.24);
