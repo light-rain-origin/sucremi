@@ -1,0 +1,254 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { DashboardSummary } from '@/types/dashboard'
+
+const props = defineProps<{ summary: DashboardSummary | null }>()
+
+const total = computed(() =>
+  (props.summary?.totalProjects ?? 0) + (props.summary?.archivedProjects ?? 0),
+)
+
+const statusItems = computed(() => [
+  { label: '进行中', count: props.summary?.activeProjects ?? 0, tone: 'active', color: 'var(--sc-status-active)' },
+  { label: '已暂停', count: props.summary?.pausedProjects ?? 0, tone: 'paused', color: 'var(--sc-status-paused)' },
+  { label: '已完成', count: props.summary?.doneProjects ?? 0, tone: 'done', color: 'var(--sc-status-done)' },
+  { label: '已归档', count: props.summary?.archivedProjects ?? 0, tone: 'archived', color: 'var(--sc-status-archived)' },
+])
+
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * 65
+const donutSegments = computed(() => {
+  if (!total.value) return []
+
+  const visibleItems = statusItems.value.filter((item) => item.count > 0)
+  const gapLength = DONUT_CIRCUMFERENCE * (4 / 360)
+  let cursor = 0
+
+  return visibleItems.map((item) => {
+    const segmentLength = (item.count / total.value) * DONUT_CIRCUMFERENCE
+    const dashLength = Math.max(0, segmentLength - gapLength)
+    const dashOffset = -(cursor + gapLength / 2)
+    cursor += segmentLength
+    return { ...item, dashLength, dashOffset }
+  }).filter((item) => item.dashLength > 0)
+})
+
+function percent(count: number) {
+  return total.value ? Math.round((count / total.value) * 100) : 0
+}
+</script>
+
+<template>
+  <section class="dashboard-side-card" aria-labelledby="project-progress-title">
+    <header class="progress-header">
+      <div class="heading-copy">
+        <h2 id="project-progress-title">项目进度</h2>
+        <span>项目状态分布</span>
+      </div>
+    </header>
+
+    <div class="progress-content">
+      <div
+        class="progress-donut"
+        role="img"
+        :aria-label="`共 ${total} 个项目，进行中 ${summary?.activeProjects ?? 0} 个`"
+      >
+        <svg class="donut-svg" viewBox="0 0 150 150" aria-hidden="true">
+          <circle class="donut-track" cx="75" cy="75" r="65" />
+          <circle
+            v-for="segment in donutSegments"
+            :key="segment.label"
+            class="donut-segment"
+            :class="`tone-${segment.tone}`"
+            cx="75"
+            cy="75"
+            r="65"
+            :stroke-dasharray="`${segment.dashLength} ${DONUT_CIRCUMFERENCE}`"
+            :stroke-dashoffset="segment.dashOffset"
+          />
+        </svg>
+        <div class="donut-center">
+          <span>进行中</span>
+          <strong>{{ summary?.activeProjects ?? 0 }} 个</strong>
+        </div>
+      </div>
+
+      <ul class="progress-legend" aria-label="各状态占比">
+        <li v-for="item in statusItems" :key="item.label">
+          <span class="legend-dot" :style="{ background: item.color }" aria-hidden="true" />
+          <span class="legend-label">{{ item.label }}</span>
+          <strong>{{ percent(item.count) }}%</strong>
+        </li>
+      </ul>
+    </div>
+
+    <footer class="progress-footer">每次推进一点，都是进展 <span aria-hidden="true">✦</span></footer>
+  </section>
+</template>
+
+<style scoped>
+.dashboard-side-card {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: 315px;
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  container-type: inline-size;
+  flex-direction: column;
+  padding: 19px 18px 14px;
+  border: 1px solid var(--sc-border-soft);
+  border-radius: var(--sc-radius-xl);
+  background: var(--sc-card-surface);
+  box-shadow: var(--sc-shadow-md);
+  color: var(--sc-text);
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.heading-copy h2 {
+  margin: 0;
+  color: var(--sc-text);
+  font-size: var(--sc-font-size-3xl);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.heading-copy span {
+  display: block;
+  margin-top: 1px;
+  color: var(--sc-text-secondary);
+  font-size: var(--sc-font-size-xs);
+}
+
+.progress-content {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-inline: 0;
+  min-height: 0;
+}
+
+.progress-donut {
+  position: relative;
+  display: grid;
+  width: min(150px, 48%);
+  aspect-ratio: 1;
+  height: auto;
+  flex: 0 1 150px;
+  min-width: 120px;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.donut-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: rotate(-90deg);
+}
+
+.donut-track,
+.donut-segment {
+  fill: none;
+  stroke-width: 20px;
+}
+
+.donut-track {
+  stroke: var(--sc-border-soft);
+}
+
+.donut-segment {
+  stroke-linecap: butt;
+}
+
+.donut-segment.tone-active { stroke: var(--sc-status-active); }
+.donut-segment.tone-paused { stroke: var(--sc-status-paused); }
+.donut-segment.tone-done { stroke: var(--sc-status-done); }
+.donut-segment.tone-archived { stroke: var(--sc-status-archived); }
+
+.donut-center {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.donut-center span {
+  color: var(--sc-text-secondary);
+  font-size: clamp(12px, 4.1cqi, var(--sc-font-size-md));
+}
+
+.donut-center strong {
+  color: var(--sc-text);
+  font-size: clamp(20px, 7.5cqi, 24px);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.progress-legend {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.progress-legend li {
+  display: grid;
+  grid-template-columns: 11px auto auto;
+  align-items: center;
+  column-gap: 7px;
+  color: var(--sc-text-secondary);
+  font-size: clamp(12px, 4.4cqi, var(--sc-font-size-lg));
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legend-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-legend strong {
+  color: var(--sc-text);
+  font-size: clamp(12px, 4.4cqi, var(--sc-font-size-lg));
+  font-weight: 500;
+}
+
+.progress-footer {
+  padding-top: 11px;
+  border-top: 1px solid var(--sc-border-soft);
+  color: var(--sc-text-secondary);
+  font-size: var(--sc-font-size-xs);
+  text-align: center;
+}
+
+.progress-footer span {
+  color: var(--sc-brand);
+}
+
+@media (max-width: 900px) {
+  .dashboard-side-card {
+    height: auto;
+    min-height: 315px;
+  }
+}
+</style>
