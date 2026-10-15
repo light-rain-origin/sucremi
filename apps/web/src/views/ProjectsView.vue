@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { useProjectStore } from '@/stores/project'
@@ -10,10 +10,21 @@ import EmptyState from '@/components/EmptyState.vue'
 import ProjectFormDialog from '@/components/ProjectFormDialog.vue'
 
 const router = useRouter()
+const route = useRoute()
 const store = useProjectStore()
 const { items, total, loading, error, query } = storeToRefs(store)
 
 const dialogVisible = ref(false)
+
+watch(
+  () => route.query.create,
+  (create) => {
+    if (create !== '1') return
+    dialogVisible.value = true
+    void router.replace({ query: { ...route.query, create: undefined } })
+  },
+  { immediate: true },
+)
 
 let timer: ReturnType<typeof setTimeout> | undefined
 function debouncedFetch() {

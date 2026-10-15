@@ -3,14 +3,17 @@ import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDashboardStore } from '@/stores/dashboard'
+import DashboardBanner from '@/components/DashboardBanner.vue'
+import DashboardStatsCards from '@/components/DashboardStatsCards.vue'
 import ProjectFlowCard from '@/components/ProjectFlowCard.vue'
 
 const router = useRouter()
 const dashboard = useDashboardStore()
-const { projectFlow, projectFlowLoading, projectFlowError } = storeToRefs(dashboard)
+const { summary, projectFlow, projectFlowLoading, projectFlowError } = storeToRefs(dashboard)
 
 onMounted(() => {
   dashboard.fetchProjectFlow()
+  dashboard.fetchSummary()
 })
 
 function openDetail(id: number) {
@@ -20,6 +23,8 @@ function openDetail(id: number) {
 
 <template>
   <section class="dashboard" aria-label="首页概览">
+    <DashboardBanner />
+    <DashboardStatsCards :summary="summary" />
     <ProjectFlowCard
       :flow="projectFlow"
       :loading="projectFlowLoading"
@@ -29,3 +34,11 @@ function openDetail(id: number) {
     />
   </section>
 </template>
+
+<style scoped>
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+</style>
