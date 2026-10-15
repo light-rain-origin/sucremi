@@ -92,10 +92,15 @@ const displayProjects = computed(() => {
   return projects.map((project, index) => ({
     project,
     tone: tones[index],
+    isMiddle: projects.length === VISIBLE_ROWS && index === 1,
     top: start + index * gap,
     center: start + index * gap + rowHeight / 2,
   }))
 })
+
+const junctionTone = computed(() =>
+  displayProjects.value[Math.floor(displayProjects.value.length / 2)]?.tone ?? '',
+)
 
 /** 最近更新稿中的连接线坐标，以 606px × 180px 画布为基准。 */
 const LINE_START_X = 292.95
@@ -194,7 +199,11 @@ const moreLabel = computed(() => {
             class="connector-line connector-summary"
             d="M485.906 106V146"
           />
-          <path class="junction-arrow" d="M328.176 86.534L335.111 90L328.176 93.466Z" />
+          <path
+            class="junction-arrow"
+            :class="junctionTone"
+            d="M328.176 86.534L335.111 90L328.176 93.466Z"
+          />
           <path class="connector-arrow connector-summary-arrow" d="M371.351 86.534L378.286 90L371.351 93.466Z" />
           <path class="connector-arrow" d="M485.967 123.86L482.467 117L489.467 117Z" />
         </svg>
@@ -204,7 +213,7 @@ const moreLabel = computed(() => {
           :key="row.project.id"
           type="button"
           class="project-pill"
-          :class="row.tone"
+          :class="[row.tone, { 'is-middle': row.isMiddle }]"
           :style="{ '--row-top': `${row.top}px` }"
           :aria-label="`${row.project.name}，更新于 ${formatDateTime(row.project.updatedAt)}，进度 ${row.project.progress}%`"
           @click="emit('open', row.project.id)"
@@ -372,7 +381,7 @@ const moreLabel = computed(() => {
 
 /* 合并点的箭头：与主线同色系，读作「三根线汇成一根，继续往右」 */
 .junction-arrow {
-  fill: #a8cd6e;
+  fill: var(--tone, var(--sc-brand));
 }
 
 .connector-summary-arrow {
@@ -421,6 +430,11 @@ const moreLabel = computed(() => {
 
 .tone-4 {
   --tone: var(--sc-flow-tone-4);
+}
+
+.project-pill.is-middle {
+  left: 25.1px;
+  width: calc(46.67% - 15px);
 }
 
 .tone-paused {
@@ -690,6 +704,10 @@ const moreLabel = computed(() => {
     width: 56%;
     padding-right: 40px;
     padding-left: 14px;
+  }
+
+  .project-pill.is-middle {
+    width: calc(56% - 15px);
   }
 
   .project-percent {
