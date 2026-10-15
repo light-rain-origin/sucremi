@@ -7,23 +7,17 @@ const emit = defineEmits<{ navigate: [] }>()
 interface NavItem {
   label: string
   glyph: keyof typeof NAV_GLYPHS
-  /** 只有已实现的路由才有 to；其余按设计稿原样渲染成不可点击的占位项 */
-  to?: string
+  to: string
 }
 
-/*
- * 顺序与文案都取自设计稿 `exports/侧边导航.html`。设计稿里 7 项都在，
- * 但只有「首页概览」「项目管理」有真实路由，其余 5 项所属模块尚未进入任务书，
- * 因此只渲染不导航（见下面 :is 分支），等对应模块开工时再补 to。
- */
 const items: NavItem[] = [
   { label: '首页概览', glyph: 'overview', to: '/' },
   { label: '项目管理', glyph: 'projects', to: '/projects' },
-  { label: '开发记录', glyph: 'log' },
-  { label: '知识沉淀', glyph: 'notes' },
-  { label: '魔法蕾米', glyph: 'remi' },
-  { label: '资料文库', glyph: 'library' },
-  { label: '系统设置', glyph: 'settings' },
+  { label: '开发记录', glyph: 'log', to: '/development-records' },
+  { label: '知识沉淀', glyph: 'notes', to: '/knowledge' },
+  { label: '魔法蕾米', glyph: 'remi', to: '/remi' },
+  { label: '资料文库', glyph: 'library', to: '/library' },
+  { label: '系统设置', glyph: 'settings', to: '/settings' },
 ]
 
 const glyphOf = (name: keyof typeof NAV_GLYPHS): NavGlyph => NAV_GLYPHS[name]
@@ -37,14 +31,13 @@ const route = useRoute()
  * 用路径判断既能保证任何时刻只有一项亮起，也能让 /projects/:id 继续算作「项目管理」。
  */
 const isActive = (item: NavItem) => {
-  if (!item.to) return false
   return item.to === '/'
     ? route.path === '/'
     : route.path === item.to || route.path.startsWith(`${item.to}/`)
 }
 
-const onSelect = (item: NavItem) => {
-  if (item.to) emit('navigate')
+const onSelect = () => {
+  emit('navigate')
 }
 </script>
 
@@ -89,14 +82,15 @@ const onSelect = (item: NavItem) => {
     <div class="sidebar-divider" aria-hidden="true" />
 
     <nav class="nav" aria-label="工作台导航">
-      <component
-        :is="item.to ? RouterLink : 'span'"
+      <RouterLink
         v-for="item in items"
         :key="item.label"
-        v-bind="item.to ? { to: item.to, activeClass: '', exactActiveClass: '' } : { 'aria-disabled': 'true' }"
+        :to="item.to"
+        active-class=""
+        exact-active-class=""
         class="nav-item"
-        :class="{ active: isActive(item), 'nav-item-static': !item.to }"
-        @click="onSelect(item)"
+        :class="{ active: isActive(item) }"
+        @click="onSelect()"
       >
         <span class="nav-icon-wrap">
           <!--
@@ -133,7 +127,7 @@ const onSelect = (item: NavItem) => {
           <path d="M2 2C2 2 6 3 6 5 6 7 2 8 2 8" />
         </svg>
         <span class="nav-dot" aria-hidden="true" />
-      </component>
+      </RouterLink>
     </nav>
   </aside>
 </template>
