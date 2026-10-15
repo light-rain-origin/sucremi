@@ -124,16 +124,12 @@ function toggleColorMode() {
 .page-title {
   overflow: hidden;
   margin: 0;
-  color: #40344f;
+  color: var(--sc-page-title-color);
   font-size: 20px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-:global(html[data-color-mode='dark']) .page-title {
-  color: var(--sc-text);
 }
 
 .search-display {

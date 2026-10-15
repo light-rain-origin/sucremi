@@ -114,6 +114,7 @@
   --sc-banner-secondary-border: rgba(238, 227, 244, 0.9);
   --sc-banner-secondary-hover: #fff;
   --sc-banner-secondary-hover-shadow: 0 5px 14px rgba(105, 78, 128, 0.08);
+  --sc-page-title-color: #40344f;
   /*
    * 角色插画装饰位（默认关闭）。
    * 素材到位后由皮肤同时给出 --sc-character-image 与 --sc-character-height 才会显示；
@@ -189,7 +190,7 @@
   --sc-topbar-h: 60px;
   /* 内容区上限：宽屏下限制行长，避免卡片被拉得过散。
      1440px 是实测调整的结果 —— 1180px 时 1920 窗口右侧要空掉 249px，内容显得缩在中间。 */
-  --sc-content-max: 1440px;
+  --sc-content-max: 1600px;
   --sc-content-pad: 28px;
   --sc-space: 8px;
 
@@ -320,6 +321,7 @@ html[data-color-mode='dark'] {
   --sc-banner-secondary-border: var(--sc-border-strong);
   --sc-banner-secondary-hover: var(--sc-bg-muted);
   --sc-banner-secondary-hover-shadow: var(--sc-shadow-sm);
+  --sc-page-title-color: var(--sc-text-secondary);
   --sc-swatch-ring: rgba(255, 255, 255, 0.12);
   --sc-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.18);
   --sc-shadow-md: 0 8px 22px rgba(0, 0, 0, 0.24);
