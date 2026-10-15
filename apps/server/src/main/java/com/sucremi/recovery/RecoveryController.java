@@ -10,6 +10,7 @@ import com.sucremi.recovery.dto.ReorderActionsRequest;
 import com.sucremi.recovery.dto.UpdateActionStatusRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -58,6 +59,19 @@ public class RecoveryController {
         return ApiResponse.ok(recoveryService.listCheckpoints(projectId));
     }
 
+    /** 删除项目下的一条检查点记录。
+     *
+     * @param projectId 项目 ID
+     * @param checkpointId 检查点 ID
+     * @return 空成功响应
+     */
+    @DeleteMapping("/checkpoints/{checkpointId}")
+    public ApiResponse<Void> deleteCheckpoint(@PathVariable long projectId,
+            @PathVariable long checkpointId) {
+        recoveryService.deleteCheckpoint(projectId, checkpointId);
+        return ApiResponse.ok();
+    }
+
     /**
      * 读取项目最新的一条检查点。
      *
@@ -78,6 +92,18 @@ public class RecoveryController {
     @GetMapping("/actions")
     public ApiResponse<List<ActionResponse>> actions(@PathVariable long projectId) {
         return ApiResponse.ok(recoveryService.listActions(projectId));
+    }
+
+    /** 删除项目下的一条下一步行动。
+     *
+     * @param projectId 项目 ID
+     * @param actionId 行动 ID
+     * @return 空成功响应
+     */
+    @DeleteMapping("/actions/{actionId}")
+    public ApiResponse<Void> deleteAction(@PathVariable long projectId, @PathVariable long actionId) {
+        recoveryService.deleteAction(projectId, actionId);
+        return ApiResponse.ok();
     }
 
     /**

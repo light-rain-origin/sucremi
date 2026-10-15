@@ -91,6 +91,31 @@ class RecoveryServiceImplTest {
         assertTrue(sql.contains("project_id"), sql);
     }
 
+    /** 检查点删除必须同时匹配用户、项目和检查点 ID。 */
+    @Test
+    void checkpointDeletionIsScopedByUserAndProject() {
+        when(projectMapper.selectOne(any())).thenReturn(project(3L, 7L));
+        when(checkpointMapper.delete(any())).thenReturn(1);
+        ArgumentCaptor<Wrapper<ProjectCheckpoint>> captor = ArgumentCaptor.forClass(Wrapper.class);
+
+        service.deleteCheckpoint(3L, 11L);
+
+        verify(checkpointMapper).delete(captor.capture());
+        String sql = captor.getValue().getSqlSegment();
+        assertTrue(sql.contains("user_id"), sql);
+        assertTrue(sql.contains("project_id"), sql);
+        assertTrue(sql.contains("id"), sql);
+    }
+
+    /** 删除不存在或不属于当前用户的检查点应返回 404。 */
+    @Test
+    void missingOwnedCheckpointCannotBeDeleted() {
+        when(projectMapper.selectOne(any())).thenReturn(project(3L, 7L));
+        when(checkpointMapper.delete(any())).thenReturn(0);
+
+        assertThrows(ResourceNotFoundException.class, () -> service.deleteCheckpoint(3L, 99L));
+    }
+
     /** 不属于当前用户的项目不可创建检查点。 */
     @Test
     void projectOwnedByAnotherUserIsNotAccessible() {
@@ -144,6 +169,31 @@ class RecoveryServiceImplTest {
 
         assertThrows(ResourceNotFoundException.class,
                 () -> service.updateActionStatus(3L, 21L, "DONE"));
+    }
+
+    /** 行动删除必须在当前用户和项目范围内执行。 */
+    @Test
+    void actionDeletionIsScopedByUserAndProject() {
+        when(projectMapper.selectOne(any())).thenReturn(project(3L, 7L));
+        when(actionMapper.delete(any())).thenReturn(1);
+        ArgumentCaptor<Wrapper<ProjectAction>> captor = ArgumentCaptor.forClass(Wrapper.class);
+
+        service.deleteAction(3L, 21L);
+
+        verify(actionMapper).delete(captor.capture());
+        String sql = captor.getValue().getSqlSegment();
+        assertTrue(sql.contains("user_id"), sql);
+        assertTrue(sql.contains("project_id"), sql);
+        assertTrue(sql.contains("id"), sql);
+    }
+
+    /** 删除不存在或不属于当前用户的行动应返回 404。 */
+    @Test
+    void missingOwnedActionCannotBeDeleted() {
+        when(projectMapper.selectOne(any())).thenReturn(project(3L, 7L));
+        when(actionMapper.delete(any())).thenReturn(0);
+
+        assertThrows(ResourceNotFoundException.class, () -> service.deleteAction(3L, 99L));
     }
 
     /** 重排完整行动集合时，每次更新都必须受用户和项目范围约束。 */

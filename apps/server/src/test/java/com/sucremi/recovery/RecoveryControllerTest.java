@@ -11,8 +11,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -47,5 +49,25 @@ class RecoveryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(9))
                 .andExpect(jsonPath("$.data.projectId").value(4));
+    }
+
+    /** 删除检查点接口应委托服务层并返回统一成功响应。 */
+    @Test
+    void deleteCheckpointEndpointUsesProjectAndCheckpointIds() throws Exception {
+        mockMvc.perform(delete("/api/v1/projects/4/checkpoints/9"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0));
+
+        verify(recoveryService).deleteCheckpoint(4L, 9L);
+    }
+
+    /** 删除行动接口应委托服务层并返回统一成功响应。 */
+    @Test
+    void deleteActionEndpointUsesProjectAndActionIds() throws Exception {
+        mockMvc.perform(delete("/api/v1/projects/4/actions/21"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0));
+
+        verify(recoveryService).deleteAction(4L, 21L);
     }
 }

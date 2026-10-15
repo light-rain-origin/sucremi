@@ -31,6 +31,13 @@ public interface RecoveryService {
      */
     List<CheckpointResponse> listCheckpoints(long projectId);
 
+    /** 删除当前用户项目中的指定检查点；跨项目或不存在的检查点返回 404。
+     *
+     * @param projectId 项目 ID
+     * @param checkpointId 检查点 ID
+     */
+    void deleteCheckpoint(long projectId, long checkpointId);
+
     /**
      * 查询项目最新检查点；无记录或项目不可访问时返回 404。
      *
@@ -55,6 +62,13 @@ public interface RecoveryService {
      * @return 排序后的行动列表
      */
     List<ActionResponse> listActions(long projectId);
+
+    /** 删除当前用户项目中的指定行动；跨项目或不存在的行动返回 404。
+     *
+     * @param projectId 项目 ID
+     * @param actionId 行动 ID
+     */
+    void deleteAction(long projectId, long actionId);
 
     /**
      * 更新行动状态；仅允许 TODO 和 DONE。

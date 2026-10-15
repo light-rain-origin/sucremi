@@ -75,6 +75,19 @@ public class RecoveryServiceImpl implements RecoveryService {
                 .stream().map(this::toResponse).toList();
     }
 
+    /** 在用户和项目范围内删除检查点，不存在时按 404 处理。 */
+    @Override
+    @Transactional
+    public void deleteCheckpoint(long projectId, long checkpointId) {
+        long userId = currentUser.currentUserId();
+        requireOwnedProject(projectId, userId);
+        int rows = checkpointMapper.delete(Wrappers.<ProjectCheckpoint>lambdaQuery()
+                .eq(ProjectCheckpoint::getId, checkpointId)
+                .eq(ProjectCheckpoint::getUserId, userId)
+                .eq(ProjectCheckpoint::getProjectId, projectId));
+        if (rows == 0) throw new ResourceNotFoundException("检查点不存在");
+    }
+
     /** 读取当前用户在指定项目下最新的检查点。 */
     @Override
     public CheckpointResponse latestCheckpoint(long projectId) {
@@ -129,6 +142,19 @@ public class RecoveryServiceImpl implements RecoveryService {
                         .orderByAsc(ProjectAction::getSortOrder)
                         .orderByAsc(ProjectAction::getId))
                 .stream().map(this::toResponse).toList();
+    }
+
+    /** 在用户和项目范围内删除行动，不存在时按 404 处理。 */
+    @Override
+    @Transactional
+    public void deleteAction(long projectId, long actionId) {
+        long userId = currentUser.currentUserId();
+        requireOwnedProject(projectId, userId);
+        int rows = actionMapper.delete(Wrappers.<ProjectAction>lambdaQuery()
+                .eq(ProjectAction::getId, actionId)
+                .eq(ProjectAction::getUserId, userId)
+                .eq(ProjectAction::getProjectId, projectId));
+        if (rows == 0) throw new ResourceNotFoundException("行动不存在");
     }
 
     /** 在用户与项目范围内更新行动状态和完成时间。 */
