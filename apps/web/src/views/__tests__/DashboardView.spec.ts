@@ -90,6 +90,7 @@ describe('DashboardView', () => {
         },
         actions: [],
         recoverySummary: '恢复卡片测试进度 当前关注：完善页面',
+        keyDecisions: [],
       },
       requestId: 'recovery',
       timestamp: 1,

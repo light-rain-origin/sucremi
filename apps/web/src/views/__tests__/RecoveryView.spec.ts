@@ -66,6 +66,7 @@ function recovery(overrides: Partial<ProjectRecovery> = {}): ProjectRecovery {
     latestCheckpoint: null,
     actions: [],
     recoverySummary: null,
+    keyDecisions: [],
     ...overrides,
   }
 }
@@ -125,6 +126,13 @@ describe('RecoveryView', () => {
     expect(wrapper.text()).toContain('保存当前检查点')
     expect(wrapper.text()).toContain('还没有下一步行动')
     expect(wrapper.text()).not.toContain('上次停在这里')
+  })
+
+  it('shows current key decisions and a link to the decision detail', async () => {
+    const wrapper = await render(recovery({ keyDecisions: [{ id: 31, title: '采用 Pinia', decision: 'Pinia', rationaleSummary: '更适配 Vue' }] }))
+    expect(wrapper.text()).toContain('关键决策')
+    expect(wrapper.text()).toContain('更适配 Vue')
+    expect(wrapper.find('a[href="/projects/8/decisions/31"]').exists()).toBe(true)
   })
 
   it('renders the latest checkpoint and persisted actions', async () => {

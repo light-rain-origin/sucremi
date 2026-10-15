@@ -29,14 +29,15 @@ class RecoveryControllerTest {
     /** 无检查点时，聚合响应明确返回空摘要和空行动列表。 */
     @Test
     void recoveryEndpointReturnsExplicitEmptyCheckpointState() throws Exception {
-        when(recoveryService.recovery(4L)).thenReturn(new RecoveryResponse(null, null, List.of(), null));
+        when(recoveryService.recovery(4L)).thenReturn(new RecoveryResponse(null, null, List.of(), null, List.of()));
 
         mockMvc.perform(get("/api/v1/projects/4/recovery"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.latestCheckpoint").value(nullValue()))
                 .andExpect(jsonPath("$.data.recoverySummary").value(nullValue()))
-                .andExpect(jsonPath("$.data.actions").isEmpty());
+                .andExpect(jsonPath("$.data.actions").isEmpty())
+                .andExpect(jsonPath("$.data.keyDecisions").isEmpty());
     }
 
     /** 最新检查点读取接口应返回指定项目的检查点数据。 */

@@ -31,6 +31,7 @@ function recovery(overrides: Partial<ProjectRecovery> = {}): ProjectRecovery {
     latestCheckpoint: null,
     actions: [],
     recoverySummary: null,
+    keyDecisions: [],
     ...overrides,
   }
 }
