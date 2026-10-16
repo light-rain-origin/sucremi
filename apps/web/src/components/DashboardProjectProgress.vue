@@ -5,7 +5,11 @@ import type { DashboardSummary } from '@/types/dashboard'
 const props = defineProps<{ summary: DashboardSummary | null }>()
 const chartId = useId()
 const animationProgress = ref(0)
+const hoveredTone = ref<string | null>(null)
+const hoverExpansion = ref<Record<string, number>>({})
 let animationFrame = 0
+let hoverAnimationFrame = 0
+let hoverClearTimer: ReturnType<typeof setTimeout> | undefined
 
 const total = computed(() =>
   (props.summary?.totalProjects ?? 0) + (props.summary?.archivedProjects ?? 0),
@@ -26,9 +30,12 @@ function point(radius: number, angle: number) {
   }
 }
 
-function roundedSegmentPath(startAngle: number, endAngle: number) {
-  const outerRadius = 75
-  const innerRadius = 55
+function roundedSegmentPath(
+  startAngle: number,
+  endAngle: number,
+  outerRadius = 75,
+  innerRadius = 55,
+) {
   const cornerRadius = Math.min(4, (endAngle - startAngle) * Math.PI / 180 * innerRadius / 2)
   const outerInset = (cornerRadius / outerRadius) * 180 / Math.PI
   const innerInset = (cornerRadius / innerRadius) * 180 / Math.PI
@@ -68,6 +75,8 @@ const donutSegments = computed(() => {
   return visibleItems.map((item) => {
     const segmentAngle = (item.count / total.value) * 360
     const segmentGap = Math.min(gapAngle, segmentAngle * 0.2)
+    const hitStartAngle = cursor - 90
+    const hitEndAngle = cursor + segmentAngle - 90
     const startAngle = cursor + segmentGap / 2 - 90
     const endAngle = cursor + segmentAngle - segmentGap / 2 - 90
     cursor += segmentAngle
@@ -75,17 +84,29 @@ const donutSegments = computed(() => {
       ...item,
       startAngle,
       endAngle,
+      hitStartAngle,
+      hitEndAngle,
     }
   })
 })
 
-const displayedSegments = computed(() => donutSegments.value.map((segment) => ({
-  ...segment,
-  path: roundedSegmentPath(
-    -90 + (segment.startAngle + 90) * animationProgress.value,
-    -90 + (segment.endAngle + 90) * animationProgress.value,
-  ),
-})))
+const displayedSegments = computed(() => donutSegments.value.map((segment) => {
+  const startAngle = -90 + (segment.startAngle + 90) * animationProgress.value
+  const endAngle = -90 + (segment.endAngle + 90) * animationProgress.value
+  const hitStartAngle = -90 + (segment.hitStartAngle + 90) * animationProgress.value
+  const hitEndAngle = -90 + (segment.hitEndAngle + 90) * animationProgress.value
+
+  return {
+    ...segment,
+    path: roundedSegmentPath(
+      startAngle,
+      endAngle,
+      75 + 3 * (hoverExpansion.value[segment.tone] ?? 0),
+      55,
+    ),
+    hitPath: roundedSegmentPath(hitStartAngle, hitEndAngle, 78, 52),
+  }
+}))
 
 const revealClipId = `${chartId}-expansion`
 const clipHandoffProgress = 0.9995
@@ -135,10 +156,61 @@ watch(() => donutSegments.value.length > 0, (hasSegments) => {
   if (hasSegments) startExpansionAnimation()
 })
 
-onBeforeUnmount(() => cancelAnimationFrame(animationFrame))
+onBeforeUnmount(() => {
+  cancelAnimationFrame(animationFrame)
+  cancelAnimationFrame(hoverAnimationFrame)
+  if (hoverClearTimer) clearTimeout(hoverClearTimer)
+})
 
 function percent(count: number) {
   return total.value ? Math.round((count / total.value) * 100) : 0
+}
+
+function animateHoverExpansion(activeTone: string | null) {
+  cancelAnimationFrame(hoverAnimationFrame)
+  const tones = statusItems.value.map((item) => item.tone)
+  const startValues = Object.fromEntries(
+    tones.map((tone) => [tone, hoverExpansion.value[tone] ?? 0]),
+  )
+
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    hoverExpansion.value = Object.fromEntries(
+      tones.map((tone) => [tone, tone === activeTone ? 1 : 0]),
+    )
+    return
+  }
+
+  const startedAt = performance.now()
+  const duration = 240
+  const step = (now: number) => {
+    const elapsed = Math.min((now - startedAt) / duration, 1)
+    const eased = 1 - Math.pow(1 - elapsed, 3)
+    hoverExpansion.value = Object.fromEntries(tones.map((tone) => {
+      const target = tone === activeTone ? 1 : 0
+      return [tone, startValues[tone]! + (target - startValues[tone]!) * eased]
+    }))
+    if (elapsed < 1) hoverAnimationFrame = requestAnimationFrame(step)
+  }
+  hoverAnimationFrame = requestAnimationFrame(step)
+}
+
+function showSegment(tone: string) {
+  if (hoverClearTimer) clearTimeout(hoverClearTimer)
+  hoverClearTimer = undefined
+  if (hoveredTone.value === tone) return
+  hoveredTone.value = tone
+  animateHoverExpansion(tone)
+}
+
+function clearSegment(tone: string) {
+  if (hoveredTone.value !== tone) return
+  if (hoverClearTimer) clearTimeout(hoverClearTimer)
+  hoverClearTimer = setTimeout(() => {
+    hoverClearTimer = undefined
+    if (hoveredTone.value !== tone) return
+    hoveredTone.value = null
+    animateHoverExpansion(null)
+  }, 32)
 }
 
 </script>
@@ -174,10 +246,18 @@ function percent(count: number) {
           <g :clip-path="`url(#${revealClipId})`">
             <path
               v-for="segment in displayedSegments"
-              :key="segment.label"
+              :key="`base-${segment.label}`"
               class="donut-segment"
               :class="`tone-${segment.tone}`"
               :d="segment.path"
+            />
+            <path
+              v-for="segment in displayedSegments"
+              :key="`hit-${segment.label}`"
+              class="donut-segment-hit"
+              :d="segment.hitPath"
+              @pointerenter="showSegment(segment.tone)"
+              @pointerleave="clearSegment(segment.tone)"
             />
           </g>
         </svg>
@@ -284,6 +364,13 @@ function percent(count: number) {
 
 .donut-segment {
   fill: var(--segment-color);
+  pointer-events: none;
+}
+
+.donut-segment-hit {
+  fill: transparent;
+  cursor: default;
+  pointer-events: fill;
 }
 
 .donut-segment.tone-active { --segment-color: var(--sc-status-active); }
