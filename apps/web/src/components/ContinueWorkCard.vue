@@ -133,7 +133,7 @@ watch(
 <style scoped>
 .continue-card {
   min-width: 0;
-  padding: 22px 24px;
+  padding: 16px 18px;
   border: 1px solid var(--sc-border-soft);
   border-radius: var(--sc-radius-xl);
   background: var(--sc-card-surface);
@@ -143,7 +143,7 @@ watch(
 .continue-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
@@ -198,19 +198,19 @@ watch(
 .continue-content {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-top: 18px;
-  padding: 16px;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 12px;
   border: 1px solid var(--sc-border-soft);
   border-radius: var(--sc-radius-lg);
   background: var(--sc-panel);
 }
 
 .project-mark {
-  flex-basis: 48px;
-  width: 48px;
-  height: 48px;
-  border-radius: 17px;
+  flex-basis: 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
   color: var(--sc-brand-strong);
   background: color-mix(in srgb, var(--sc-brand) 14%, var(--sc-card-surface));
   font-size: 23px;
@@ -228,10 +228,10 @@ watch(
 }
 
 .continue-copy .recovery-summary {
-  overflow: hidden;
-  max-width: 900px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: none;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.45;
 }
 
 .continue-copy .next-action {
@@ -253,7 +253,7 @@ watch(
   flex: 0 0 auto;
   align-items: center;
   gap: 8px;
-  padding: 10px 15px;
+  padding: 8px 12px;
   border-radius: var(--sc-radius-pill);
   background: var(--sc-gradient-brand);
   box-shadow: var(--sc-shadow-brand);
@@ -303,7 +303,7 @@ watch(
 
 @media (max-width: 700px) {
   .continue-card {
-    padding: 18px;
+    padding: 14px 16px;
   }
 
   .continue-content {
