@@ -186,20 +186,34 @@ const moreLabel = computed(() => {
 
     <div class="flow-canvas" :class="{ 'is-empty': !displayProjects.length }">
       <template v-if="displayProjects.length">
-        <svg class="connectors" viewBox="0 0 606.11 180" preserveAspectRatio="none" aria-hidden="true">
-          <template v-for="path in connectorPaths" :key="path.id">
-            <path class="connector-line" :class="path.tone" :d="path.path" />
+        <svg
+          class="connectors"
+          :style="{ '--pill-count': displayProjects.length }"
+          viewBox="0 0 606.11 180"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <template v-for="(path, index) in connectorPaths" :key="path.id">
+            <path
+              class="connector-line project-connector"
+              :class="path.tone"
+              :style="{ '--pill-index': index }"
+              pathLength="1"
+              :d="path.path"
+            />
             <path
               v-if="path.arrow"
-              class="connector-arrow"
+              class="connector-arrow project-connector-arrow"
               :class="path.tone"
+              :style="{ '--pill-index': index }"
               :d="path.arrow.d"
             />
           </template>
           <!-- 汇合后的品牌色主线，接到平均进度节点下方。 -->
-          <path class="connector-line connector-summary" :d="`M${connectorSummaryStart} 90H${SUMMARY_END_X}`" />
+          <path class="connector-line connector-summary" pathLength="1" :d="`M${connectorSummaryStart} 90H${SUMMARY_END_X}`" />
           <path
             class="connector-line connector-summary"
+            pathLength="1"
             d="M485.906 106V146"
           />
           <path
@@ -208,7 +222,7 @@ const moreLabel = computed(() => {
             d="M328.176 86.534L335.111 90L328.176 93.466Z"
           />
           <path class="connector-arrow connector-summary-arrow" d="M371.351 86.534L378.286 90L371.351 93.466Z" />
-          <path class="connector-arrow" d="M485.967 123.86L482.467 117L489.467 117Z" />
+          <path class="connector-arrow connector-down-arrow" d="M485.967 123.86L482.467 117L489.467 117Z" />
         </svg>
 
         <button
@@ -374,7 +388,27 @@ const moreLabel = computed(() => {
   fill: none;
   stroke: var(--tone, var(--sc-brand));
   stroke-width: 1.8;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
   vector-effect: non-scaling-stroke;
+}
+
+.project-connector {
+  animation: connector-draw 480ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--pill-index, 0) * 95ms) both;
+}
+
+.connector-summary {
+  animation: connector-draw 420ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--pill-count, 0) * 95ms + 160ms) both;
+}
+
+@keyframes connector-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 /* 线上的箭头跟着自己那根线的颜色走 */
@@ -382,13 +416,37 @@ const moreLabel = computed(() => {
   fill: var(--tone, var(--sc-brand));
 }
 
+.project-connector-arrow {
+  opacity: 0;
+  animation: connector-arrow-enter 180ms ease-out calc(var(--pill-index, 0) * 95ms + 320ms) both;
+}
+
 /* 合并点的箭头：与主线同色系，读作「三根线汇成一根，继续往右」 */
 .junction-arrow {
   fill: var(--tone, var(--sc-brand));
+  opacity: 0;
+  animation: connector-arrow-enter 180ms ease-out calc(var(--pill-count, 0) * 95ms + 180ms) both;
 }
 
 .connector-summary-arrow {
   fill: var(--sc-brand-strong);
+  opacity: 0;
+  animation: connector-arrow-enter 180ms ease-out calc(var(--pill-count, 0) * 95ms + 520ms) both;
+}
+
+.connector-down-arrow {
+  opacity: 0;
+  animation: connector-arrow-enter 180ms ease-out calc(var(--pill-count, 0) * 95ms + 700ms) both;
+}
+
+@keyframes connector-arrow-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .project-pill {
@@ -764,6 +822,16 @@ const moreLabel = computed(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .project-connector,
+  .connector-summary,
+  .project-connector-arrow,
+  .junction-arrow,
+  .connector-summary-arrow,
+  .connector-down-arrow {
+    animation: none;
+    opacity: 1;
+  }
+
   .project-pill {
     animation: none;
   }
