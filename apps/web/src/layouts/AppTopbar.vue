@@ -229,28 +229,26 @@ function toggleColorMode() {
 
 .navigation-actions {
   justify-content: flex-end;
-  gap: 18px;
+  gap: 8px;
 }
 
 .icon-action {
   position: relative;
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   flex: 0 0 auto;
   place-items: center;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: transparent;
-  border: 1px solid rgba(155, 134, 248, 0.8);
-  background: #f3eaff;
-  color: #9b86f8;
+  color: #9A80BC;
   cursor: pointer;
 }
 
 .icon-action:hover {
-  background: var(--sc-brand-alt-soft);
+  color: #9A80BC;
 }
 
 .icon-action svg {
@@ -272,19 +270,18 @@ function toggleColorMode() {
 }
 
 .color-mode-action {
-  border-color: rgba(155, 134, 248, 0.8);
-  background: #f3eaff;
-  color: #9b86f8;
+  color: #9A80BC;
 }
 
 .color-mode-action:hover {
-  background: #e9ddff;
+  color: #9A80BC;
 }
 
 .profile-display {
   display: flex;
   align-items: center;
   gap: 9px;
+  margin-left: 8px;
   color: var(--sc-text);
   white-space: nowrap;
 }
@@ -341,7 +338,7 @@ function toggleColorMode() {
   }
 
   .navigation-actions {
-    gap: 10px;
+    gap: 8px;
   }
 }
 
@@ -364,7 +361,7 @@ function toggleColorMode() {
   }
 
   .navigation-actions {
-    gap: 10px;
+    gap: 8px;
   }
 
   .notification-action,

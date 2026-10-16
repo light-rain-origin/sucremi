@@ -49,26 +49,23 @@ async function onCommand(command: unknown) {
 <style scoped>
 .skin-trigger {
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   place-items: center;
   padding: 0;
-  border: 1px solid rgba(155, 134, 248, 0.8);
+  border: 0;
   border-radius: 50%;
-  background: #f3eaff;
-  color: #9b86f8;
+  background: transparent;
+  color: #9A80BC;
   font-family: inherit;
   font-size: var(--sc-font-size-md);
   cursor: pointer;
   transition:
-    color 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease;
+    color 0.18s ease;
 }
 
 .skin-trigger:hover {
-  color: #5b43c2;
-  background: #e9ddff;
+  color: #9A80BC;
 }
 
 .skin-trigger:focus-visible {
