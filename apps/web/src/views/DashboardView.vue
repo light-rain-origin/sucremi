@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDashboardStore } from '@/stores/dashboard'
@@ -9,10 +9,72 @@ import DashboardProjectProgress from '@/components/DashboardProjectProgress.vue'
 import ProjectFlowCard from '@/components/ProjectFlowCard.vue'
 import ContinueWorkCard from '@/components/ContinueWorkCard.vue'
 import ProjectActivityTimeline from '@/components/ProjectActivityTimeline.vue'
+import { getProjectRecovery } from '@/api/recovery'
+import type { ProjectAction } from '@/types/recovery'
+import type { Project } from '@/types/project'
 
 const router = useRouter()
 const dashboard = useDashboardStore()
 const { summary, projectFlow, projectFlowLoading, projectFlowError } = storeToRefs(dashboard)
+
+interface DashboardTodo {
+  action: ProjectAction
+  project: Project
+}
+
+const todos = ref<DashboardTodo[]>([])
+const todosLoading = ref(false)
+const todosError = ref<string | null>(null)
+const projectIds = computed(() => (projectFlow.value?.projects ?? []).map((project) => project.id).join(','))
+let todoRequestSequence = 0
+
+async function loadTodos() {
+  const sequence = ++todoRequestSequence
+  todos.value = []
+  todosError.value = null
+
+  if (projectFlowLoading.value || !projectFlow.value) {
+    todosLoading.value = projectFlowLoading.value
+    return
+  }
+  if (projectFlowError.value) {
+    todosLoading.value = false
+    todosError.value = projectFlowError.value
+    return
+  }
+
+  const projects = projectFlow.value.projects
+  if (!projects.length) {
+    todosLoading.value = false
+    return
+  }
+
+  todosLoading.value = true
+  try {
+    const recoveries = await Promise.all(projects.map(async (project) => {
+      const response = await getProjectRecovery(project.id)
+      if (response.code !== 0) throw new Error(response.message || '待办事项读取失败')
+      return { project, actions: response.data.actions }
+    }))
+    if (sequence !== todoRequestSequence) return
+
+    todos.value = recoveries
+      .flatMap(({ project, actions }) => actions
+        .filter((action) => action.status === 'TODO')
+        .map((action) => ({ action, project })))
+      .sort((a, b) =>
+        new Date(b.action.createdAt).getTime() - new Date(a.action.createdAt).getTime() ||
+        b.action.id - a.action.id,
+      )
+      .slice(0, 5)
+  } catch (reason) {
+    if (sequence === todoRequestSequence) todosError.value = (reason as Error).message || '待办事项读取失败'
+  } finally {
+    if (sequence === todoRequestSequence) todosLoading.value = false
+  }
+}
+
+watch([projectIds, projectFlowLoading, projectFlowError], loadTodos, { immediate: true })
 
 onMounted(() => {
   dashboard.fetchProjectFlow()
@@ -29,15 +91,19 @@ function openDetail(id: number) {
     <DashboardBanner />
     <DashboardStatsCards :summary="summary" />
     <div class="dashboard-lower-row">
-      <div class="dashboard-primary-group">
-        <ProjectFlowCard
-          :flow="projectFlow"
-          :loading="projectFlowLoading"
-          :error="projectFlowError"
-          @open="openDetail"
-          @view-all="router.push('/projects')"
-        />
+      <ProjectFlowCard
+        :flow="projectFlow"
+        :loading="projectFlowLoading"
+        :error="projectFlowError"
+        @open="openDetail"
+        @view-all="router.push('/projects')"
+      />
+
+      <div class="progress-slot">
         <DashboardProjectProgress :summary="summary" />
+      </div>
+
+      <div class="dashboard-right-stack">
         <div class="continue-work-slot">
           <ContinueWorkCard
             :projects="projectFlow?.projects ?? []"
@@ -46,30 +112,48 @@ function openDetail(id: number) {
             @retry-projects="dashboard.fetchProjectFlow()"
           />
         </div>
-        <section class="dashboard-mini-panel todo-panel" aria-labelledby="dashboard-todo-title">
+
+        <section class="dashboard-mini-panel todo-panel" aria-labelledby="dashboard-todo-title" :aria-busy="todosLoading">
           <header class="dashboard-mini-header">
             <span class="dashboard-mini-icon todo-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M8 5.5h11M8 12h11M8 18.5h7"/><path d="m3.5 5.5 1.2 1.2 2-2.4M3.5 12l1.2 1.2 2-2.4M3.5 18.5l1.2 1.2 2-2.4"/></svg>
             </span>
             <h2 id="dashboard-todo-title">我的待办</h2>
+            <span v-if="todos.length" class="todo-count">{{ todos.length }} 项</span>
           </header>
-          <div class="dashboard-mini-empty">
+
+          <div v-if="todosLoading" class="todo-state" role="status">正在整理待办事项…</div>
+          <div v-else-if="todosError" class="todo-state todo-error" role="alert">
+            <span>{{ todosError }}</span>
+            <button type="button" @click="loadTodos">重试</button>
+          </div>
+          <div v-else-if="todos.length === 0" class="dashboard-mini-empty">
             <span class="empty-mark" aria-hidden="true">✓</span>
             <strong>暂无待办事项</strong>
             <p>记下下一步，回来时更容易接上进度。</p>
           </div>
+          <ul v-else class="todo-list">
+            <li v-for="todo in todos" :key="`${todo.project.id}-${todo.action.id}`" class="todo-item">
+              <span class="todo-check" aria-hidden="true"></span>
+              <RouterLink :to="`/projects/${todo.project.id}/recovery`" class="todo-link">
+                <span class="todo-title">{{ todo.action.title }}</span>
+                <span class="todo-project">{{ todo.project.name }}</span>
+              </RouterLink>
+              <span class="todo-arrow" aria-hidden="true">›</span>
+            </li>
+          </ul>
+        </section>
+
+        <section class="dashboard-mini-panel activity-panel" aria-labelledby="dashboard-activity-title">
+          <header class="dashboard-mini-header">
+            <span class="dashboard-mini-icon activity-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 19.5h16M6.5 16V9.5M12 16V5.5M17.5 16v-4"/><path d="m5.5 7 5-3 5 2 3-2"/></svg>
+            </span>
+            <h2 id="dashboard-activity-title">近期活动</h2>
+          </header>
+          <ProjectActivityTimeline compact />
         </section>
       </div>
-
-      <section class="dashboard-mini-panel activity-panel" aria-labelledby="dashboard-activity-title">
-        <header class="dashboard-mini-header">
-          <span class="dashboard-mini-icon activity-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 19.5h16M6.5 16V9.5M12 16V5.5M17.5 16v-4"/><path d="m5.5 7 5-3 5 2 3-2"/></svg>
-          </span>
-          <h2 id="dashboard-activity-title">近期活动</h2>
-        </header>
-        <ProjectActivityTimeline compact />
-      </section>
     </div>
   </section>
 </template>
@@ -85,24 +169,47 @@ function openDetail(id: number) {
 .dashboard-lower-row {
   display: grid;
   width: 100%;
-  grid-template-columns: minmax(0, 1106.72px) minmax(320px, 1fr);
-  align-items: stretch;
+  grid-template-columns: minmax(0, 666.72px) minmax(320px, 420px) minmax(320px, 1fr);
+  grid-template-areas: 'recent progress right-stack';
+  grid-template-rows: auto;
+  align-items: start;
   column-gap: 20px;
   row-gap: 18px;
 }
 
-.dashboard-primary-group {
-  display: grid;
-  width: 100%;
-  min-width: 0;
-  grid-template-columns: minmax(0, 666.72px) minmax(320px, 1fr);
-  column-gap: 20px;
-  row-gap: 18px;
+.dashboard-lower-row :deep(.project-flow-card) {
+  grid-area: recent;
 }
 
 .continue-work-slot {
   min-width: 0;
-  grid-column: 1;
+  container-type: inline-size;
+}
+
+.continue-work-slot :deep(.continue-card) {
+  min-height: 220px;
+  height: auto;
+  box-sizing: border-box;
+}
+
+.dashboard-right-stack {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  grid-area: right-stack;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.progress-slot {
+  grid-area: progress;
+  min-width: 0;
+}
+
+.progress-slot :deep(.dashboard-side-card) {
+  height: 315px;
+  min-height: 315px;
+  box-sizing: border-box;
 }
 
 .dashboard-mini-panel {
@@ -117,12 +224,13 @@ function openDetail(id: number) {
 }
 
 .todo-panel {
-  min-height: 260px;
+  box-sizing: border-box;
   container-type: inline-size;
 }
 
 .activity-panel {
   min-height: 315px;
+  flex: 1 1 auto;
 }
 
 .dashboard-mini-header {
@@ -140,6 +248,111 @@ function openDetail(id: number) {
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.todo-count {
+  margin-left: auto;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sc-brand-alt) 12%, var(--sc-card-surface));
+  color: var(--sc-brand-alt-strong);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 184px;
+  overflow-y: auto;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--sc-border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.todo-item {
+  display: flex;
+  height: 56px;
+  min-width: 0;
+  flex: 0 0 56px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 11px;
+  border: 1px solid var(--sc-border-soft);
+  border-radius: var(--sc-radius-lg);
+  background: color-mix(in srgb, var(--sc-panel) 78%, transparent);
+  box-sizing: border-box;
+}
+
+.todo-check {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border: 1.5px solid var(--sc-brand-alt);
+  border-radius: 50%;
+}
+
+.todo-link {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.todo-title,
+.todo-project {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todo-title {
+  color: var(--sc-text);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.todo-project {
+  color: var(--sc-text-secondary);
+  font-size: 11px;
+}
+
+.todo-arrow {
+  color: var(--sc-text-placeholder);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.todo-state {
+  display: flex;
+  min-height: 130px;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--sc-text-secondary);
+  font-size: 12px;
+  text-align: center;
+}
+
+.todo-error {
+  flex-direction: column;
+  color: var(--sc-error-strong);
+}
+
+.todo-error button {
+  padding: 6px 12px;
+  border: 1px solid var(--sc-border-strong);
+  border-radius: var(--sc-radius-pill);
+  background: var(--sc-panel-strong);
+  color: var(--sc-brand-alt-strong);
+  font: inherit;
+  cursor: pointer;
 }
 
 .dashboard-mini-icon {
@@ -228,56 +441,41 @@ function openDetail(id: number) {
 
 @container (max-width: 1346px) {
   .dashboard-lower-row {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      'recent progress'
+      'right-stack right-stack';
   }
 
-  .dashboard-primary-group {
-    width: min(100%, 1106.72px);
-    margin-inline: auto;
-  }
-
-  .activity-panel {
+  .dashboard-lower-row :deep(.project-flow-card) {
     width: 100%;
   }
-}
 
-@container (max-width: 1006px) {
-  .dashboard-primary-group {
-    grid-template-columns: minmax(0, 1fr) 320px;
-  }
 }
 
 @container (max-width: 820px) {
-  .dashboard-primary-group {
+  .dashboard-lower-row {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas:
+      'recent'
+      'progress'
+      'right-stack';
   }
 
-  .continue-work-slot {
-    grid-column: auto;
-  }
-
-  .dashboard-primary-group :deep(.project-flow-card) {
+  .dashboard-lower-row :deep(.project-flow-card) {
     width: 100%;
+  }
+
+  .progress-slot :deep(.dashboard-side-card) {
+    height: auto;
   }
 }
 
-@container (min-width: 700px) {
-  .todo-panel .dashboard-mini-empty {
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 14px;
-    text-align: left;
-  }
-
-  .todo-panel .dashboard-mini-empty .empty-mark {
-    flex: 0 0 38px;
-    margin: 0;
-  }
-
-  .todo-panel .dashboard-mini-empty p {
-    max-width: none;
-    margin: 0 0 0 auto;
-    text-align: right;
+@container (max-width: 460px) {
+  .continue-work-slot :deep(.saved-at) {
+    display: none;
   }
 }
 
