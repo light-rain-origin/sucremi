@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import SkinSwitcher from '@/components/SkinSwitcher.vue'
 
 defineEmits<{ toggle: [] }>()
 
 const route = useRoute()
+const router = useRouter()
 const title = computed(() => {
   if (route.path === '/') return '首页概览'
   if (route.path === '/projects') return '项目管理'
@@ -28,6 +29,41 @@ function readColorMode(): ColorMode {
 }
 
 const colorMode = ref<ColorMode>(readColorMode())
+const notificationOpen = ref(false)
+const notificationButton = ref<HTMLButtonElement | null>(null)
+const searchExpanded = ref(false)
+const searchQuery = ref('')
+const searchInput = ref<HTMLInputElement | null>(null)
+
+watch(
+  () => route.query.q,
+  (value) => {
+    const search = Array.isArray(value) ? value[0] : value
+    searchQuery.value = typeof search === 'string' ? search : ''
+  },
+  { immediate: true },
+)
+
+watch(notificationOpen, (open, _previous, onCleanup) => {
+  if (!open) return
+
+  const handlePointerDown = (event: PointerEvent) => {
+    const target = event.target
+    const popover = document.querySelector('.notification-popover-popper')
+    if (target instanceof Node && (notificationButton.value?.contains(target) || popover?.contains(target))) return
+    notificationOpen.value = false
+  }
+  const handleKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') notificationOpen.value = false
+  }
+
+  document.addEventListener('pointerdown', handlePointerDown, true)
+  document.addEventListener('keydown', handleKeydown, true)
+  onCleanup(() => {
+    document.removeEventListener('pointerdown', handlePointerDown, true)
+    document.removeEventListener('keydown', handleKeydown, true)
+  })
+})
 
 function applyColorMode() {
   document.documentElement.dataset.colorMode = colorMode.value
@@ -45,6 +81,33 @@ function toggleColorMode() {
     // 本次会话仍可切换；存储不可用时刷新后回到浅色。
   }
 }
+
+function focusSearch() {
+  searchExpanded.value = true
+  searchInput.value?.focus()
+}
+
+function collapseSearch() {
+  searchExpanded.value = false
+}
+
+function submitSearch() {
+  const query = searchQuery.value.trim()
+  if (!query) return
+
+  searchExpanded.value = false
+  searchInput.value?.blur()
+  void router.push({ name: 'projects', query: { q: query } })
+}
+
+function handleSearchShortcut(event: KeyboardEvent) {
+  if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
+  event.preventDefault()
+  focusSearch()
+}
+
+onMounted(() => window.addEventListener('keydown', handleSearchShortcut))
+onBeforeUnmount(() => window.removeEventListener('keydown', handleSearchShortcut))
 </script>
 
 <template>
@@ -60,38 +123,86 @@ function toggleColorMode() {
       </h1>
     </div>
 
-    <div class="search-display" role="search" aria-label="搜索项目、任务、记录、资料、待办">
+    <form
+      class="search-display"
+      :class="{ 'is-expanded': searchExpanded }"
+      role="search"
+      aria-label="搜索项目"
+      @submit.prevent="submitSearch"
+      @click="focusSearch"
+    >
       <svg class="search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle cx="10.8" cy="10.8" r="6.6" />
         <path d="m16 16 4.2 4.2" />
       </svg>
-      <span class="search-placeholder">搜索项目、任务、记录、资料、待办...</span>
-      <span class="search-shortcut">Ctrl + K</span>
-    </div>
+      <input
+        ref="searchInput"
+        v-model="searchQuery"
+        class="search-input"
+        type="search"
+        aria-label="搜索项目名称或简介"
+        placeholder="搜索项目名称或简介..."
+        autocomplete="off"
+        @focus="searchExpanded = true"
+        @blur="collapseSearch"
+      />
+      <span v-if="!searchExpanded" class="search-shortcut">Ctrl + K</span>
+    </form>
 
     <div class="navigation-actions">
-      <button class="icon-action notification-action" type="button" aria-label="通知">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 3a6 6 0 0 0-6 6c0 4.7-1.55 6.45-2.73 7.74A1.3 1.3 0 0 0 4.23 19h15.54a1.3 1.3 0 0 0 .96-2.26C19.55 15.45 18 13.7 18 9a6 6 0 0 0-6-6Z" />
-          <path d="M9.6 20a2.55 2.55 0 0 0 4.8 0Z" />
-        </svg>
-        <i aria-hidden="true" />
-      </button>
-      <button
-        class="icon-action color-mode-action"
-        type="button"
-        :aria-label="colorMode === 'light' ? '切换到深色模式' : '切换到浅色模式'"
-        :title="colorMode === 'light' ? '深色模式' : '浅色模式'"
-        @click="toggleColorMode"
+      <el-popover
+        v-model:visible="notificationOpen"
+        placement="bottom-end"
+        trigger="click"
+        :width="264"
+        :show-arrow="false"
+        popper-class="header-tool-popover notification-popover-popper"
       >
-        <svg v-if="colorMode === 'light'" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="12" cy="12" r="4.1" />
-          <path d="M11 1.8h2v3.4h-2zM11 18.8h2v3.4h-2zM18.8 11h3.4v2h-3.4zM1.8 11h3.4v2H1.8zM17.66 4.93l1.41 1.41-2.4 2.4-1.41-1.41zM7.34 15.25l1.41 1.41-2.4 2.4-1.41-1.41zM17.66 19.07l-2.4-2.4 1.41-1.41 2.4 2.4zM7.34 8.75l-2.4-2.4 1.41-1.41 2.4 2.4z" />
-        </svg>
-        <svg v-else viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M20.4 15.3A8.8 8.8 0 0 1 8.7 3.6a8.9 8.9 0 1 0 11.7 11.7Z" />
-        </svg>
-      </button>
+        <template #reference>
+          <el-tooltip content="通知" placement="bottom" :show-after="350">
+            <button
+              class="toolbar-button notification-action"
+              ref="notificationButton"
+              type="button"
+              aria-label="通知"
+              aria-haspopup="dialog"
+              :aria-expanded="notificationOpen"
+              @keydown.esc.prevent.stop="notificationOpen = false"
+            >
+              <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+                <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.89 18 8a6 6 0 0 0-12 0c0 4.89-1.408 5.956-2.738 7.326Z" />
+              </svg>
+            </button>
+          </el-tooltip>
+        </template>
+        <section class="notification-popover" role="dialog" aria-label="站内通知">
+          <h2>站内通知</h2>
+          <p>目前没有新通知</p>
+        </section>
+      </el-popover>
+      <el-tooltip
+        :content="colorMode === 'light' ? '切换至深色模式' : '切换至浅色模式'"
+        placement="bottom"
+        :show-after="350"
+      >
+        <button
+          class="toolbar-button color-mode-action"
+          type="button"
+          :aria-label="colorMode === 'light' ? '切换至深色模式' : '切换至浅色模式'"
+          @click="toggleColorMode"
+        >
+          <Transition name="toolbar-icon" mode="out-in">
+            <svg :key="colorMode" class="lucide-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <template v-if="colorMode === 'light'">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" />
+              </template>
+              <path v-else d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6.5 6.5 0 0 0 8.268 8.268c.344-.215.825-.003.803.401" />
+            </svg>
+          </Transition>
+        </button>
+      </el-tooltip>
       <SkinSwitcher />
       <div class="profile-display" aria-label="Sucremi 用户">
         <span class="profile-avatar" aria-hidden="true">S</span>
@@ -109,14 +220,14 @@ function toggleColorMode() {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(170px, 1fr) minmax(280px, 360px) minmax(220px, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 1.4fr) minmax(220px, 1fr);
   align-items: center;
-  height: 56px;
-  min-height: 56px;
+  height: 45px;
+  min-height: 45px;
   margin: 20px 21px 0;
   padding: 0 20px;
   border: 1px solid color-mix(in srgb, var(--sc-border-soft) 72%, transparent);
-  border-radius: 14px;
+  border-radius: 15px;
   background: color-mix(in srgb, var(--sc-panel) 72%, transparent);
   box-shadow: none;
 }
@@ -188,21 +299,61 @@ function toggleColorMode() {
 }
 
 .search-display {
+  position: relative;
+  z-index: 3;
   display: flex;
   min-width: 0;
-  height: 38px;
+  width: min(100%, clamp(220px, 24vw, 360px));
+  max-width: 100%;
+  height: 30px;
   align-items: center;
-  gap: 10px;
-  padding: 0 10px 0 13px;
+  gap: 8px;
+  justify-self: center;
+  margin: 0;
+  padding: 0 9px 0 11px;
   border: 1px solid var(--sc-border-soft);
   border-radius: 999px;
   background: var(--sc-panel-strong);
   color: var(--sc-text-placeholder);
+  transition:
+    width 320ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 320ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-display.is-expanded {
+  width: min(620px, max(100%, 40vw));
+  border-color: var(--sc-brand-alt);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sc-brand-alt) 10%, transparent);
+}
+
+.search-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--sc-text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.search-input::placeholder {
+  color: var(--sc-text-placeholder);
+}
+
+.search-input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+.search-display:focus-within {
+  border-color: var(--sc-brand-alt);
 }
 
 .search-icon {
-  width: 17px;
-  height: 17px;
+  width: 15px;
+  height: 15px;
   flex: 0 0 auto;
   stroke: #a99ac0;
   stroke-linecap: round;
@@ -211,19 +362,20 @@ function toggleColorMode() {
 
 .search-placeholder {
   overflow: hidden;
+  min-width: 0;
   flex: 1;
-  font-size: 13px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .search-shortcut {
   flex: 0 0 auto;
-  padding: 3px 7px;
+  padding: 2px 6px;
   border: 1px solid var(--sc-border-soft);
   border-radius: 10px;
   color: var(--sc-text-secondary);
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1.2;
 }
 
@@ -232,49 +384,107 @@ function toggleColorMode() {
   gap: 8px;
 }
 
-.icon-action {
+.navigation-actions :deep(.toolbar-button) {
   position: relative;
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   flex: 0 0 auto;
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: 9px;
   background: transparent;
-  color: #9A80BC;
+  color: #9a80bc;
   cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
 }
 
-.icon-action:hover {
-  color: #9A80BC;
+.navigation-actions :deep(.toolbar-button:hover) {
+  color: #8062a9;
+  background: #f3ebfa;
 }
 
-.icon-action svg {
-  width: 19px;
-  height: 19px;
-  fill: currentColor;
-  stroke: none;
+.navigation-actions :deep(.toolbar-button:active) {
+  background: #ede0f8;
 }
 
-.notification-action i {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ef86ba;
-  box-shadow: 0 0 0 2px var(--sc-panel-strong);
+.navigation-actions :deep(.toolbar-button:focus-visible) {
+  outline: 2px solid var(--sc-brand-alt-strong);
+  outline-offset: 2px;
 }
 
-.color-mode-action {
-  color: #9A80BC;
+.navigation-actions :deep(.lucide-icon) {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.color-mode-action:hover {
-  color: #9A80BC;
+:global(html[data-color-mode='dark']) .navigation-actions :deep(.toolbar-button) {
+  color: var(--sc-text-secondary);
+}
+
+:global(html[data-color-mode='dark']) .navigation-actions :deep(.toolbar-button:hover) {
+  color: var(--sc-brand-alt);
+  background: var(--sc-nav-icon-bg);
+}
+
+:global(html[data-color-mode='dark']) .navigation-actions :deep(.toolbar-button:active) {
+  background: var(--sc-nav-icon-bg-active);
+}
+
+.toolbar-icon-enter-active,
+.toolbar-icon-leave-active {
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.toolbar-icon-enter-from {
+  opacity: 0;
+  transform: translateY(2px);
+}
+
+.toolbar-icon-leave-to {
+  opacity: 0;
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-display {
+    transition-duration: 1ms;
+  }
+
+  .navigation-actions :deep(.toolbar-button) {
+    transition-duration: 1ms;
+  }
+
+  .toolbar-icon-enter-active,
+  .toolbar-icon-leave-active {
+    transition-duration: 1ms;
+  }
+}
+
+.notification-popover h2 {
+  margin: 0;
+  color: var(--sc-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.notification-popover p {
+  margin: 20px 0 12px;
+  color: var(--sc-text-secondary);
+  font-size: 13px;
+  text-align: center;
+}
+
+:global(.header-tool-popover) {
+  --el-popover-bg-color: var(--sc-card-surface);
+  --el-popover-border-color: var(--sc-border-soft);
+  border-radius: var(--sc-radius-lg);
 }
 
 .profile-display {
@@ -330,7 +540,7 @@ function toggleColorMode() {
 
 @media (max-width: 1024px) {
   .app-top-navigation {
-    grid-template-columns: minmax(150px, 1fr) minmax(240px, 320px) minmax(175px, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(160px, 1fr) minmax(220px, 1fr);
     margin-right: 16px;
     margin-left: 16px;
     padding-right: 14px;
@@ -342,11 +552,21 @@ function toggleColorMode() {
   }
 }
 
+@media (max-width: 900px) and (min-width: 769px) {
+  .app-top-navigation {
+    grid-template-columns: minmax(0, 1fr) minmax(160px, 1.2fr) minmax(0, 1fr);
+  }
+
+  .profile-display {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .app-top-navigation {
     grid-template-columns: minmax(0, 1fr) auto;
-    height: 56px;
-    min-height: 56px;
+    height: 45px;
+    min-height: 45px;
     margin: 20px 12px 0;
     padding: 0 12px;
     border-radius: 16px;
@@ -364,7 +584,6 @@ function toggleColorMode() {
     gap: 8px;
   }
 
-  .notification-action,
   .profile-display {
     display: none;
   }

@@ -22,8 +22,35 @@ function statusFromRoute(value: unknown): ProjectStatus | '' {
     : ''
 }
 
+function searchFromRoute(value: unknown): string {
+  const search = Array.isArray(value) ? value[0] : value
+  return typeof search === 'string' ? search : ''
+}
+
 query.value.status = statusFromRoute(route.query.status)
 query.value.archived = route.query.archived === 'true'
+query.value.q = searchFromRoute(route.query.q)
+
+watch(
+  () => route.query.q,
+  (value) => {
+    const nextSearch = searchFromRoute(value)
+    if (query.value.q !== nextSearch) query.value.q = nextSearch
+  },
+)
+
+watch(
+  () => query.value.q,
+  (value) => {
+    const nextSearch = value.trim()
+    if (searchFromRoute(route.query.q) === nextSearch) return
+
+    const nextQuery = { ...route.query }
+    if (nextSearch) nextQuery.q = nextSearch
+    else delete nextQuery.q
+    void router.replace({ query: nextQuery })
+  },
+)
 
 const dialogVisible = ref(false)
 
