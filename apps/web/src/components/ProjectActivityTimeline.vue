@@ -176,11 +176,11 @@ onMounted(load)
 .timeline-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 14px; color: var(--sc-text-secondary); font-size: var(--sc-font-size-sm); }
 .timeline-pagination button:disabled { opacity: .45; cursor: default; }
 .compact .timeline-list { padding-top: 11px; }
-.compact .timeline-item { gap: 11px; padding-bottom: 15px; }
+.compact .timeline-item { gap: 11px; padding-bottom: 10px; }
 .compact .event-copy { flex-direction: column; align-items: flex-start; gap: 2px; }
-.compact .event-project { font-size: 10px; font-weight: 600; }
-.compact .event-label { overflow: hidden; max-width: 100%; color: var(--sc-text); text-overflow: ellipsis; white-space: nowrap; font-size: var(--sc-font-size-sm); }
-.compact .event-copy time { font-size: 10px; }
+.compact .event-project { font-size: var(--sc-font-size-sm); font-weight: 650; line-height: 1.3; }
+.compact .event-label { overflow: hidden; max-width: 100%; color: var(--sc-text); text-overflow: ellipsis; white-space: nowrap; font-size: var(--sc-font-size-sm); line-height: 1.35; }
+.compact .event-copy time { font-size: var(--sc-font-size-xs); line-height: 1.2; }
 .compact .timeline-state { min-height: 180px; padding: 10px; }
 @media (max-width: 600px) { .timeline-toolbar { align-items: flex-start; flex-direction: column; } }
 </style>

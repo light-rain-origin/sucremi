@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 import type { DashboardSummary } from '@/types/dashboard'
 
 const props = defineProps<{ summary: DashboardSummary | null }>()
+const chartId = useId()
 
 const total = computed(() =>
   (props.summary?.totalProjects ?? 0) + (props.summary?.archivedProjects ?? 0),
@@ -15,22 +16,67 @@ const statusItems = computed(() => [
   { label: '已归档', count: props.summary?.archivedProjects ?? 0, tone: 'archived', color: 'var(--sc-status-archived)' },
 ])
 
-const DONUT_CIRCUMFERENCE = 2 * Math.PI * 65
+function point(radius: number, angle: number) {
+  const radians = (angle * Math.PI) / 180
+  return {
+    x: 75 + radius * Math.cos(radians),
+    y: 75 + radius * Math.sin(radians),
+  }
+}
+
+function roundedSegmentPath(startAngle: number, endAngle: number) {
+  const outerRadius = 75
+  const innerRadius = 55
+  const cornerRadius = Math.min(7, (endAngle - startAngle) * Math.PI / 180 * innerRadius / 2)
+  const outerInset = (cornerRadius / outerRadius) * 180 / Math.PI
+  const innerInset = (cornerRadius / innerRadius) * 180 / Math.PI
+  const outerStart = point(outerRadius, startAngle + outerInset)
+  const outerEnd = point(outerRadius, endAngle - outerInset)
+  const innerEnd = point(innerRadius, endAngle - innerInset)
+  const innerStart = point(innerRadius, startAngle + innerInset)
+  const outerArc = endAngle - startAngle - outerInset * 2
+  const innerArc = endAngle - startAngle - innerInset * 2
+  const largeOuterArc = outerArc > 180 ? 1 : 0
+  const largeInnerArc = innerArc > 180 ? 1 : 0
+
+  const format = (value: number) => Number(value.toFixed(3))
+  const coordinates = (value: { x: number; y: number }) => `${format(value.x)} ${format(value.y)}`
+
+  return [
+    `M ${coordinates(outerStart)}`,
+    `A ${outerRadius} ${outerRadius} 0 ${largeOuterArc} 1 ${coordinates(outerEnd)}`,
+    `Q ${coordinates(point(outerRadius, endAngle))} ${coordinates(point(outerRadius - cornerRadius, endAngle))}`,
+    `L ${coordinates(point(innerRadius + cornerRadius, endAngle))}`,
+    `Q ${coordinates(point(innerRadius, endAngle))} ${coordinates(innerEnd)}`,
+    `A ${innerRadius} ${innerRadius} 0 ${largeInnerArc} 0 ${coordinates(innerStart)}`,
+    `Q ${coordinates(point(innerRadius, startAngle))} ${coordinates(point(innerRadius + cornerRadius, startAngle))}`,
+    `L ${coordinates(point(outerRadius - cornerRadius, startAngle))}`,
+    `Q ${coordinates(point(outerRadius, startAngle))} ${coordinates(outerStart)}`,
+    'Z',
+  ].join(' ')
+}
+
 const donutSegments = computed(() => {
   if (!total.value) return []
 
   const visibleItems = statusItems.value.filter((item) => item.count > 0)
-  const gapLength = DONUT_CIRCUMFERENCE * (4 / 360)
+  const gapAngle = 5
   let cursor = 0
 
   return visibleItems.map((item) => {
-    const segmentLength = (item.count / total.value) * DONUT_CIRCUMFERENCE
-    const dashLength = Math.max(0, segmentLength - gapLength)
-    const dashOffset = -(cursor + gapLength / 2)
-    cursor += segmentLength
-    return { ...item, dashLength, dashOffset }
-  }).filter((item) => item.dashLength > 0)
+    const segmentAngle = (item.count / total.value) * 360
+    const segmentGap = Math.min(gapAngle, segmentAngle * 0.2)
+    const startAngle = cursor + segmentGap / 2 - 90
+    const endAngle = cursor + segmentAngle - segmentGap / 2 - 90
+    cursor += segmentAngle
+    return {
+      ...item,
+      path: roundedSegmentPath(startAngle, endAngle),
+    }
+  })
 })
+
+const revealMaskId = `${chartId}-reveal`
 
 function percent(count: number) {
   return total.value ? Math.round((count / total.value) * 100) : 0
@@ -54,16 +100,21 @@ function percent(count: number) {
       >
         <svg class="donut-svg" viewBox="0 0 150 150" aria-hidden="true">
           <circle class="donut-track" cx="75" cy="75" r="65" />
-          <circle
+          <defs>
+            <mask :id="revealMaskId" maskUnits="userSpaceOnUse" x="0" y="0" width="150" height="150">
+              <path
+                class="donut-reveal-mask"
+                d="M 75 10 A 65 65 0 0 1 75 140 A 65 65 0 0 1 75 10"
+              />
+            </mask>
+          </defs>
+          <path
             v-for="segment in donutSegments"
             :key="segment.label"
             class="donut-segment"
             :class="`tone-${segment.tone}`"
-            cx="75"
-            cy="75"
-            r="65"
-            :stroke-dasharray="`${segment.dashLength} ${DONUT_CIRCUMFERENCE}`"
-            :stroke-dashoffset="segment.dashOffset"
+            :d="segment.path"
+            :mask="`url(#${revealMaskId})`"
           />
         </svg>
         <div class="donut-center">
@@ -152,13 +203,14 @@ function percent(count: number) {
   width: 100%;
   height: 100%;
   overflow: visible;
-  transform: rotate(-90deg);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: donut-chart-entrance 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .donut-track,
 .donut-segment {
   fill: none;
-  stroke-width: 20px;
 }
 
 .donut-track {
@@ -166,13 +218,38 @@ function percent(count: number) {
 }
 
 .donut-segment {
-  stroke-linecap: butt;
+  fill: var(--segment-color);
 }
 
-.donut-segment.tone-active { stroke: var(--sc-status-active); }
-.donut-segment.tone-paused { stroke: var(--sc-status-paused); }
-.donut-segment.tone-done { stroke: var(--sc-status-done); }
-.donut-segment.tone-archived { stroke: var(--sc-status-archived); }
+.donut-reveal-mask {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 24px;
+  stroke-linecap: butt;
+  stroke-dasharray: 0 408.4;
+  animation: donut-ring-reveal 1100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.donut-segment.tone-active { --segment-color: var(--sc-status-active); }
+.donut-segment.tone-paused { --segment-color: var(--sc-status-paused); }
+.donut-segment.tone-done { --segment-color: var(--sc-status-done); }
+.donut-segment.tone-archived { --segment-color: var(--sc-status-archived); }
+
+@keyframes donut-ring-reveal {
+  from { stroke-dasharray: 0 408.4; }
+  to { stroke-dasharray: 408.4 408.4; }
+}
+
+@keyframes donut-chart-entrance {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 
 .donut-center {
   position: relative;
@@ -249,6 +326,17 @@ function percent(count: number) {
   .dashboard-side-card {
     height: auto;
     min-height: 315px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .donut-reveal-mask {
+    animation: none;
+    stroke-dasharray: 408.4 408.4;
+  }
+
+  .donut-svg {
+    animation: none;
   }
 }
 </style>
