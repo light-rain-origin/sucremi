@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import type { DashboardSummary } from '@/types/dashboard'
-import type { ProjectStatus } from '@/types/project'
 
 const props = defineProps<{ summary: DashboardSummary | null }>()
-const router = useRouter()
 const chartId = useId()
 const animationProgress = ref(0)
-const hoveredTone = ref<string | null>(null)
 let animationFrame = 0
 
 const total = computed(() =>
@@ -21,10 +17,6 @@ const statusItems = computed(() => [
   { label: '已完成', count: props.summary?.doneProjects ?? 0, tone: 'done', color: 'var(--sc-status-done)' },
   { label: '已归档', count: props.summary?.archivedProjects ?? 0, tone: 'archived', color: 'var(--sc-status-archived)' },
 ])
-
-const focusedStatus = computed(() =>
-  statusItems.value.find((item) => item.tone === hoveredTone.value),
-)
 
 function point(radius: number, angle: number) {
   const radians = (angle * Math.PI) / 180
@@ -149,25 +141,6 @@ function percent(count: number) {
   return total.value ? Math.round((count / total.value) * 100) : 0
 }
 
-function openStatus(tone: string) {
-  const statusByTone: Record<string, ProjectStatus | undefined> = {
-    active: 'ACTIVE',
-    paused: 'PAUSED',
-    done: 'DONE',
-  }
-  const status = statusByTone[tone]
-
-  void router.push({
-    name: 'projects',
-    query: status ? { status } : { archived: 'true' },
-  })
-}
-
-function openStatusFromKeyboard(event: KeyboardEvent, tone: string) {
-  if (event.key !== 'Enter' && event.key !== ' ') return
-  event.preventDefault()
-  openStatus(tone)
-}
 </script>
 
 <template>
@@ -203,46 +176,21 @@ function openStatusFromKeyboard(event: KeyboardEvent, tone: string) {
               v-for="segment in displayedSegments"
               :key="segment.label"
               class="donut-segment"
-              :class="[
-                `tone-${segment.tone}`,
-                {
-                  'is-highlighted': hoveredTone === segment.tone,
-                  'is-muted': hoveredTone !== null && hoveredTone !== segment.tone,
-                },
-              ]"
+              :class="`tone-${segment.tone}`"
               :d="segment.path"
-              role="link"
-              tabindex="0"
-              :aria-label="`${segment.label}：${segment.count} 个，占 ${percent(segment.count)}%`"
-              @click="openStatus(segment.tone)"
-              @keydown="openStatusFromKeyboard($event, segment.tone)"
-              @mouseenter="hoveredTone = segment.tone"
-              @mouseleave="hoveredTone = null"
-              @focus="hoveredTone = segment.tone"
-              @blur="hoveredTone = null"
-            >
-              <title>{{ segment.label }}：{{ segment.count }} 个，占 {{ percent(segment.count) }}%</title>
-            </path>
+            />
           </g>
         </svg>
-        <Transition name="donut-center" mode="out-in">
-          <div :key="focusedStatus?.tone ?? 'default'" class="donut-center">
-            <span>{{ focusedStatus?.label ?? '进行中' }}</span>
-            <strong>
-              {{ focusedStatus?.count ?? summary?.activeProjects ?? 0 }} 个
-            </strong>
-          </div>
-        </Transition>
+        <div class="donut-center">
+          <span>进行中</span>
+          <strong>{{ summary?.activeProjects ?? 0 }} 个</strong>
+        </div>
       </div>
 
       <ul class="progress-legend" aria-label="各状态占比">
         <li
           v-for="item in statusItems"
           :key="item.label"
-          :class="{
-            'is-highlighted': hoveredTone === item.tone,
-            'is-muted': hoveredTone !== null && hoveredTone !== item.tone,
-          }"
           :aria-label="`${item.label}：${item.count} 个，占 ${percent(item.count)}%`"
         >
           <span class="legend-dot" :style="{ background: item.color }" aria-hidden="true" />
@@ -336,20 +284,6 @@ function openStatusFromKeyboard(event: KeyboardEvent, tone: string) {
 
 .donut-segment {
   fill: var(--segment-color);
-  cursor: pointer;
-  transition: opacity 160ms ease, filter 160ms ease;
-}
-
-.donut-segment.is-highlighted {
-  filter: brightness(1.08) drop-shadow(0 2px 3px color-mix(in srgb, var(--segment-color), transparent 48%));
-}
-
-.donut-segment.is-muted {
-  opacity: 0.42;
-}
-
-.donut-segment:focus:not(:focus-visible) {
-  outline: none;
 }
 
 .donut-segment.tone-active { --segment-color: var(--sc-status-active); }
@@ -358,27 +292,15 @@ function openStatusFromKeyboard(event: KeyboardEvent, tone: string) {
 .donut-segment.tone-archived { --segment-color: var(--sc-status-archived); }
 
 .donut-center {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 3px;
-}
-
-.donut-center-enter-active,
-.donut-center-leave-active {
-  transition: opacity 150ms ease, transform 150ms ease;
-}
-
-.donut-center-enter-from {
-  opacity: 0;
-  transform: translateY(4px);
-}
-
-.donut-center-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
+  pointer-events: none;
 }
 
 .donut-center span {
@@ -412,21 +334,6 @@ function openStatusFromKeyboard(event: KeyboardEvent, tone: string) {
   color: var(--sc-text-secondary);
   font-size: clamp(12px, 4.4cqi, var(--sc-font-size-lg));
   border-radius: 6px;
-  transition: opacity 160ms ease, color 160ms ease;
-}
-
-.progress-legend li.is-highlighted {
-  color: var(--sc-text);
-}
-
-.progress-legend li.is-muted {
-  opacity: 0.48;
-}
-
-.progress-legend li:focus-visible,
-.donut-segment:focus-visible {
-  outline: 2px solid var(--sc-brand);
-  outline-offset: 3px;
 }
 
 .legend-dot {
@@ -457,13 +364,6 @@ function openStatusFromKeyboard(event: KeyboardEvent, tone: string) {
 
 .progress-footer span {
   color: var(--sc-brand);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .donut-center-enter-active,
-  .donut-center-leave-active {
-    transition: none;
-  }
 }
 
 @container (min-width: 560px) {
