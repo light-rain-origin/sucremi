@@ -29,14 +29,24 @@ function openDetail(id: number) {
     <DashboardBanner />
     <DashboardStatsCards :summary="summary" />
     <div class="dashboard-lower-row">
-      <ProjectFlowCard
-        :flow="projectFlow"
-        :loading="projectFlowLoading"
-        :error="projectFlowError"
-        @open="openDetail"
-        @view-all="router.push('/projects')"
-      />
-      <DashboardProjectProgress :summary="summary" />
+      <div class="dashboard-primary-group">
+        <ProjectFlowCard
+          :flow="projectFlow"
+          :loading="projectFlowLoading"
+          :error="projectFlowError"
+          @open="openDetail"
+          @view-all="router.push('/projects')"
+        />
+        <DashboardProjectProgress :summary="summary" />
+        <div class="continue-work-slot">
+          <ContinueWorkCard
+            :projects="projectFlow?.projects ?? []"
+            :projects-loading="projectFlowLoading || !projectFlow"
+            :projects-error="projectFlowError"
+            @retry-projects="dashboard.fetchProjectFlow()"
+          />
+        </div>
+      </div>
       <aside class="dashboard-third-card" aria-label="待办与近期活动">
         <section class="dashboard-mini-panel" aria-labelledby="dashboard-todo-title">
           <header class="dashboard-mini-header">
@@ -63,12 +73,6 @@ function openDetail(id: number) {
         </section>
       </aside>
     </div>
-    <ContinueWorkCard
-      :projects="projectFlow?.projects ?? []"
-      :projects-loading="projectFlowLoading || !projectFlow"
-      :projects-error="projectFlowError"
-      @retry-projects="dashboard.fetchProjectFlow()"
-    />
   </section>
 </template>
 
@@ -81,9 +85,23 @@ function openDetail(id: number) {
 
 .dashboard-lower-row {
   display: grid;
-  grid-template-columns: minmax(0, 666.72px) 320px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1006.72px) minmax(0, 1fr);
   align-items: start;
-  gap: 20px;
+  column-gap: 20px;
+  row-gap: 18px;
+}
+
+.dashboard-primary-group {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 666.72px) 320px;
+  column-gap: 20px;
+  row-gap: 18px;
+}
+
+.continue-work-slot {
+  min-width: 0;
+  grid-column: 1 / -1;
 }
 
 .dashboard-third-card {
@@ -203,17 +221,29 @@ function openDetail(id: number) {
 
 @media (max-width: 1200px) {
   .dashboard-lower-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-primary-group {
     grid-template-columns: minmax(0, 1fr) 320px;
   }
 
   .dashboard-third-card {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
 }
 
 @media (max-width: 900px) {
   .dashboard-lower-row {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-primary-group {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .continue-work-slot {
+    grid-column: auto;
   }
 
   .dashboard-third-card {
