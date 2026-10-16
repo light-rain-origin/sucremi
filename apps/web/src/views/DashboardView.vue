@@ -46,8 +46,6 @@ function openDetail(id: number) {
             @retry-projects="dashboard.fetchProjectFlow()"
           />
         </div>
-      </div>
-      <aside class="dashboard-third-column" aria-label="待办与近期活动">
         <section class="dashboard-mini-panel todo-panel" aria-labelledby="dashboard-todo-title">
           <header class="dashboard-mini-header">
             <span class="dashboard-mini-icon todo-icon" aria-hidden="true">
@@ -61,17 +59,17 @@ function openDetail(id: number) {
             <p>记下下一步，回来时更容易接上进度。</p>
           </div>
         </section>
+      </div>
 
-        <section class="dashboard-mini-panel activity-panel" aria-labelledby="dashboard-activity-title">
-          <header class="dashboard-mini-header">
-            <span class="dashboard-mini-icon activity-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M4 19.5h16M6.5 16V9.5M12 16V5.5M17.5 16v-4"/><path d="m5.5 7 5-3 5 2 3-2"/></svg>
-            </span>
-            <h2 id="dashboard-activity-title">近期活动</h2>
-          </header>
-          <ProjectActivityTimeline compact />
-        </section>
-      </aside>
+      <section class="dashboard-mini-panel activity-panel" aria-labelledby="dashboard-activity-title">
+        <header class="dashboard-mini-header">
+          <span class="dashboard-mini-icon activity-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 19.5h16M6.5 16V9.5M12 16V5.5M17.5 16v-4"/><path d="m5.5 7 5-3 5 2 3-2"/></svg>
+          </span>
+          <h2 id="dashboard-activity-title">近期活动</h2>
+        </header>
+        <ProjectActivityTimeline compact />
+      </section>
     </div>
   </section>
 </template>
@@ -88,7 +86,7 @@ function openDetail(id: number) {
   display: grid;
   width: 100%;
   grid-template-columns: minmax(0, 1106.72px) minmax(320px, 1fr);
-  align-items: start;
+  align-items: stretch;
   column-gap: 20px;
   row-gap: 18px;
 }
@@ -104,15 +102,7 @@ function openDetail(id: number) {
 
 .continue-work-slot {
   min-width: 0;
-  grid-column: 1 / -1;
-}
-
-.dashboard-third-column {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 18px;
-  container-type: inline-size;
+  grid-column: 1;
 }
 
 .dashboard-mini-panel {
@@ -128,6 +118,7 @@ function openDetail(id: number) {
 
 .todo-panel {
   min-height: 260px;
+  container-type: inline-size;
 }
 
 .activity-panel {
@@ -181,7 +172,20 @@ function openDetail(id: number) {
 }
 
 .activity-panel :deep(.activity-timeline) {
+  display: flex;
+  flex-direction: column;
   min-height: 0;
+  flex: 1;
+}
+
+.activity-panel :deep(.timeline-list) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-evenly;
+}
+
+.activity-panel :deep(.timeline-state) {
   flex: 1;
 }
 
@@ -222,15 +226,24 @@ function openDetail(id: number) {
   line-height: 1.65;
 }
 
-@container (max-width: 1486px) {
+@container (max-width: 1346px) {
   .dashboard-lower-row {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .dashboard-third-column {
+  .dashboard-primary-group {
+    width: min(100%, 1106.72px);
+    margin-inline: auto;
+  }
+
+  .activity-panel {
     width: 100%;
-    grid-column: 1;
-    justify-self: stretch;
+  }
+}
+
+@container (max-width: 1006px) {
+  .dashboard-primary-group {
+    grid-template-columns: minmax(0, 1fr) 320px;
   }
 }
 
@@ -244,24 +257,24 @@ function openDetail(id: number) {
   }
 
   .dashboard-primary-group :deep(.project-flow-card) {
-    justify-self: center;
+    width: 100%;
   }
 }
 
 @container (min-width: 700px) {
-  .dashboard-mini-empty {
+  .todo-panel .dashboard-mini-empty {
     flex-direction: row;
     justify-content: flex-start;
     gap: 14px;
     text-align: left;
   }
 
-  .dashboard-mini-empty .empty-mark {
+  .todo-panel .dashboard-mini-empty .empty-mark {
     flex: 0 0 38px;
     margin: 0;
   }
 
-  .dashboard-mini-empty p {
+  .todo-panel .dashboard-mini-empty p {
     max-width: none;
     margin: 0 0 0 auto;
     text-align: right;
