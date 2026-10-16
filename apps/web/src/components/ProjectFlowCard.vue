@@ -517,6 +517,13 @@ const moreLabel = computed(() => {
   text-align: left;
   box-shadow: var(--sc-shadow-sm);
   cursor: pointer;
+  transition: filter 160ms ease, box-shadow 160ms ease;
+}
+
+.project-pill:hover {
+  z-index: 1;
+  filter: brightness(1.07) saturate(1.03);
+  box-shadow: var(--sc-shadow-md);
 }
 
 @keyframes project-pill-enter {
@@ -955,6 +962,7 @@ const moreLabel = computed(() => {
 
   .project-pill {
     animation: none;
+    transition: none;
   }
 
   .summary-node,
