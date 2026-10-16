@@ -29,7 +29,7 @@ function point(radius: number, angle: number) {
 function roundedSegmentPath(startAngle: number, endAngle: number) {
   const outerRadius = 75
   const innerRadius = 55
-  const cornerRadius = Math.min(7, (endAngle - startAngle) * Math.PI / 180 * innerRadius / 2)
+  const cornerRadius = Math.min(4, (endAngle - startAngle) * Math.PI / 180 * innerRadius / 2)
   const outerInset = (cornerRadius / outerRadius) * 180 / Math.PI
   const innerInset = (cornerRadius / innerRadius) * 180 / Math.PI
   const outerStart = point(outerRadius, startAngle + outerInset)
