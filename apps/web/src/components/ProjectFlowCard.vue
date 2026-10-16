@@ -212,12 +212,12 @@ const moreLabel = computed(() => {
         </svg>
 
         <button
-          v-for="row in displayProjects"
+          v-for="(row, index) in displayProjects"
           :key="row.project.id"
           type="button"
           class="project-pill"
           :class="[row.tone, { 'is-middle': row.isMiddle }]"
-          :style="{ '--row-top': `${row.top}px` }"
+          :style="{ '--row-top': `${row.top}px`, '--pill-index': index }"
           :aria-label="`${row.project.name}，更新于 ${formatDateTime(row.project.updatedAt)}，进度 ${row.project.progress}%`"
           @click="emit('open', row.project.id)"
         >
@@ -395,6 +395,7 @@ const moreLabel = computed(() => {
   position: absolute;
   top: var(--row-top);
   left: 10.1px;
+  animation: project-pill-enter 520ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--pill-index, 0) * 95ms) both;
   display: flex;
   width: 46.67%;
   height: 42px;
@@ -409,6 +410,18 @@ const moreLabel = computed(() => {
   text-align: left;
   box-shadow: var(--sc-shadow-sm);
   cursor: pointer;
+}
+
+@keyframes project-pill-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-16px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
 }
 
 /* 胶囊配色。tone-1..4 是「进行中」的配色池，由脚本按项目 id 分配（见 assignPillTones），
@@ -751,6 +764,10 @@ const moreLabel = computed(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .project-pill {
+    animation: none;
+  }
+
   .tab,
   .completion-fill,
   .completion-orb {
