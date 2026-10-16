@@ -28,6 +28,13 @@ const RESERVED_PILL_TONES: Partial<Record<ProjectStatus, string>> = {
 }
 
 const selectedTab = ref<ProjectTab>('ongoing')
+const hasSwitchedTab = ref(false)
+function selectTab(tab: ProjectTab) {
+  if (selectedTab.value === tab) return
+  selectedTab.value = tab
+  hasSwitchedTab.value = true
+}
+
 const tabs: { id: ProjectTab; label: string }[] = [
   { id: 'unfinished', label: '未完成' },
   { id: 'ongoing', label: '进行中' },
@@ -177,7 +184,7 @@ const moreLabel = computed(() => {
           class="tab"
           :class="{ selected: selectedTab === tab.id }"
           :aria-selected="selectedTab === tab.id"
-          @click="selectedTab = tab.id"
+          @click="selectTab(tab.id)"
         >
           <span>{{ tab.label }}</span>
           <span class="tab-count">{{ counts[tab.id] }}</span>
@@ -187,13 +194,12 @@ const moreLabel = computed(() => {
 
     <div
       class="flow-canvas"
-      :class="{ 'is-empty': !displayProjects.length }"
+      :class="{ 'is-empty': !displayProjects.length, 'is-tab-switching': hasSwitchedTab }"
       :style="{ '--summary-delay': '1040ms' }"
     >
       <template v-if="displayProjects.length">
         <svg
           class="connectors"
-          :style="{ '--pill-count': displayProjects.length }"
           viewBox="0 0 606.11 180"
           preserveAspectRatio="none"
           aria-hidden="true"
@@ -230,8 +236,14 @@ const moreLabel = computed(() => {
             :class="junctionTone"
             d="M328.176 86.534L335.111 90L328.176 93.466Z"
           />
-          <path class="connector-arrow connector-summary-arrow" d="M371.351 86.534L378.286 90L371.351 93.466Z" />
-          <path class="connector-arrow connector-down-arrow" d="M485.967 123.86L482.467 117L489.467 117Z" />
+          <path
+            class="connector-arrow connector-summary-arrow"
+            d="M371.351 86.534L378.286 90L371.351 93.466Z"
+          />
+          <path
+            class="connector-arrow connector-down-arrow"
+            d="M485.967 123.86L482.467 117L489.467 117Z"
+          />
         </svg>
 
         <button
@@ -403,15 +415,15 @@ const moreLabel = computed(() => {
 }
 
 .project-connector {
-  animation: connector-draw 520ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--pill-index, 0) * 95ms + 520ms) both;
+  animation: connector-draw var(--connector-duration, 520ms) cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--pill-index, 0) * var(--pill-stagger, 95ms) + var(--connector-offset, 520ms)) both;
 }
 
 .connector-summary {
-  animation: connector-draw 420ms cubic-bezier(0.2, 0.75, 0.25, 1) var(--summary-delay, 1040ms) both;
+  animation: connector-draw var(--summary-duration, 420ms) cubic-bezier(0.2, 0.75, 0.25, 1) var(--summary-delay, 1040ms) both;
 }
 
 .connector-summary-down {
-  animation-delay: calc(var(--summary-delay, 1040ms) + 420ms);
+  animation-delay: calc(var(--summary-delay, 1040ms) + var(--summary-duration, 420ms));
 }
 
 @keyframes connector-draw {
@@ -431,25 +443,25 @@ const moreLabel = computed(() => {
 
 .project-connector-arrow {
   opacity: 0;
-  animation: connector-arrow-enter 180ms ease-out calc(var(--pill-index, 0) * 95ms + 840ms) both;
+  animation: connector-arrow-enter var(--arrow-duration, 180ms) ease-out calc(var(--pill-index, 0) * var(--pill-stagger, 95ms) + var(--connector-offset, 520ms) + var(--project-arrow-offset, 320ms)) both;
 }
 
 /* 合并点的箭头：与主线同色系，读作「三根线汇成一根，继续往右」 */
 .junction-arrow {
   fill: var(--tone, var(--sc-brand));
   opacity: 0;
-  animation: connector-arrow-enter 180ms ease-out var(--summary-delay, 1040ms) both;
+  animation: connector-arrow-enter var(--arrow-duration, 180ms) ease-out var(--summary-delay, 1040ms) both;
 }
 
 .connector-summary-arrow {
   fill: var(--sc-brand-strong);
   opacity: 0;
-  animation: connector-arrow-enter 180ms ease-out calc(var(--summary-delay, 1040ms) + 220ms) both;
+  animation: connector-arrow-enter var(--arrow-duration, 180ms) ease-out calc(var(--summary-delay, 1040ms) + var(--summary-arrow-offset, 220ms)) both;
 }
 
 .connector-down-arrow {
   opacity: 0;
-  animation: connector-arrow-enter 180ms ease-out calc(var(--summary-delay, 1040ms) + 600ms) both;
+  animation: connector-arrow-enter var(--arrow-duration, 180ms) ease-out calc(var(--summary-delay, 1040ms) + var(--down-arrow-offset, 600ms)) both;
 }
 
 @keyframes connector-arrow-enter {
@@ -466,7 +478,7 @@ const moreLabel = computed(() => {
   position: absolute;
   top: var(--row-top);
   left: 10.1px;
-  animation: project-pill-enter 520ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--pill-index, 0) * 95ms) both;
+  animation: project-pill-enter var(--pill-duration, 520ms) cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--pill-index, 0) * var(--pill-stagger, 95ms)) both;
   display: flex;
   width: 46.67%;
   height: 42px;
@@ -574,7 +586,7 @@ const moreLabel = computed(() => {
 
 .summary-node {
   position: absolute;
-  animation: flow-result-enter 420ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--summary-delay, 1040ms) + 300ms) both;
+  animation: flow-result-enter var(--result-duration, 420ms) cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--summary-delay, 1040ms) + var(--node-offset, 300ms)) both;
   top: 71px;
   left: 70%;
   display: grid;
@@ -606,7 +618,7 @@ const moreLabel = computed(() => {
   --completion-orb-size: 8px;
   --completion-orb-inset: calc(var(--completion-orb-size) / 2 + 1px);
   position: absolute;
-  animation: flow-result-enter 420ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--summary-delay, 1040ms) + 760ms) both;
+  animation: flow-result-enter var(--result-duration, 420ms) cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--summary-delay, 1040ms) + var(--completion-offset, 760ms)) both;
   top: 132px;
   left: 68%;
   width: 150px;
@@ -637,10 +649,10 @@ const moreLabel = computed(() => {
   width: calc(var(--completion-area) * var(--completion-ratio, 0));
   transform: scaleX(1);
   transform-origin: left center;
-  animation: completion-fill-enter 620ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--summary-delay, 1040ms) + 900ms) both;
+  animation: completion-fill-enter var(--fill-duration, 620ms) cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--summary-delay, 1040ms) + var(--fill-offset, 900ms)) both;
   border-radius: var(--sc-radius-pill);
   background: var(--sc-gradient-brand);
-  transition: width 0.25s ease;
+  transition: width 650ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes completion-fill-enter {
@@ -680,7 +692,7 @@ const moreLabel = computed(() => {
 .completion-orb {
   position: absolute;
   top: 50%;
-  animation: completion-orb-enter 620ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--summary-delay, 1040ms) + 900ms) both;
+  animation: completion-orb-enter var(--fill-duration, 620ms) cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--summary-delay, 1040ms) + var(--fill-offset, 900ms)) both;
   left: max(
     var(--completion-orb-inset),
     calc(var(--completion-area) * var(--completion-ratio, 0) - var(--completion-orb-inset))
@@ -693,7 +705,7 @@ const moreLabel = computed(() => {
   box-shadow: var(--sc-flow-orb-glow);
   /* 与填充同一条 transition：光球是坐在填充前端的，只动宽度的话它会先跳到
      终点、填充再慢慢追上来，两者会脱开 0.25s */
-  transition: left 0.25s ease;
+  transition: left 650ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes completion-orb-enter {
@@ -873,6 +885,32 @@ const moreLabel = computed(() => {
   .foot-note {
     margin-left: 0;
   }
+}
+
+.flow-canvas.is-tab-switching .project-pill {
+  animation: none;
+}
+
+.flow-canvas.is-tab-switching .project-connector,
+.flow-canvas.is-tab-switching .connector-summary,
+.flow-canvas.is-tab-switching .project-connector-arrow,
+.flow-canvas.is-tab-switching .junction-arrow,
+.flow-canvas.is-tab-switching .connector-summary-arrow,
+.flow-canvas.is-tab-switching .connector-down-arrow,
+.flow-canvas.is-tab-switching .summary-node,
+.flow-canvas.is-tab-switching .completion-pill {
+  animation: none;
+  opacity: 1;
+}
+
+.flow-canvas.is-tab-switching .project-connector,
+.flow-canvas.is-tab-switching .connector-summary {
+  stroke-dashoffset: 0;
+}
+
+.flow-canvas.is-tab-switching .completion-fill,
+.flow-canvas.is-tab-switching .completion-orb {
+  animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
