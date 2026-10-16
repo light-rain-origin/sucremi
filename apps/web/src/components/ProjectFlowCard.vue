@@ -106,7 +106,8 @@ const junctionTone = computed(() =>
 )
 
 /** 最近更新稿中的连接线坐标，以 606px × 180px 画布为基准。 */
-const LINE_START_X = 292.95
+// 连线起点略微藏进胶囊右缘，避免 SVG 亚像素渲染时出现细缝。
+const LINE_START_X = 291.5
 const JUNCTION = { x: 331.34, y: 90 }
 const MIDDLE_END_X = 373.77
 const SUMMARY_START_X = 373.236
@@ -188,7 +189,10 @@ const moreLabel = computed(() => {
       <template v-if="displayProjects.length">
         <svg
           class="connectors"
-          :style="{ '--pill-count': displayProjects.length }"
+          :style="{
+            '--pill-count': displayProjects.length,
+            '--summary-delay': `${Math.max(0, displayProjects.length - 1) * 95 + 1040}ms`,
+          }"
           viewBox="0 0 606.11 180"
           preserveAspectRatio="none"
           aria-hidden="true"
@@ -210,9 +214,13 @@ const moreLabel = computed(() => {
             />
           </template>
           <!-- 汇合后的品牌色主线，接到平均进度节点下方。 -->
-          <path class="connector-line connector-summary" pathLength="1" :d="`M${connectorSummaryStart} 90H${SUMMARY_END_X}`" />
           <path
             class="connector-line connector-summary"
+            :d="`M${connectorSummaryStart} 90H${SUMMARY_END_X}`"
+            pathLength="1"
+          />
+          <path
+            class="connector-line connector-summary connector-summary-down"
             pathLength="1"
             d="M485.906 106V146"
           />
@@ -394,11 +402,15 @@ const moreLabel = computed(() => {
 }
 
 .project-connector {
-  animation: connector-draw 480ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--pill-index, 0) * 95ms) both;
+  animation: connector-draw 520ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--pill-index, 0) * 95ms + 520ms) both;
 }
 
 .connector-summary {
-  animation: connector-draw 420ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--pill-count, 0) * 95ms + 160ms) both;
+  animation: connector-draw 420ms cubic-bezier(0.2, 0.75, 0.25, 1) var(--summary-delay, 1040ms) both;
+}
+
+.connector-summary-down {
+  animation-delay: calc(var(--summary-delay, 1040ms) + 420ms);
 }
 
 @keyframes connector-draw {
@@ -418,25 +430,25 @@ const moreLabel = computed(() => {
 
 .project-connector-arrow {
   opacity: 0;
-  animation: connector-arrow-enter 180ms ease-out calc(var(--pill-index, 0) * 95ms + 320ms) both;
+  animation: connector-arrow-enter 180ms ease-out calc(var(--pill-index, 0) * 95ms + 840ms) both;
 }
 
 /* 合并点的箭头：与主线同色系，读作「三根线汇成一根，继续往右」 */
 .junction-arrow {
   fill: var(--tone, var(--sc-brand));
   opacity: 0;
-  animation: connector-arrow-enter 180ms ease-out calc(var(--pill-count, 0) * 95ms + 180ms) both;
+  animation: connector-arrow-enter 180ms ease-out var(--summary-delay, 1040ms) both;
 }
 
 .connector-summary-arrow {
   fill: var(--sc-brand-strong);
   opacity: 0;
-  animation: connector-arrow-enter 180ms ease-out calc(var(--pill-count, 0) * 95ms + 520ms) both;
+  animation: connector-arrow-enter 180ms ease-out calc(var(--summary-delay, 1040ms) + 220ms) both;
 }
 
 .connector-down-arrow {
   opacity: 0;
-  animation: connector-arrow-enter 180ms ease-out calc(var(--pill-count, 0) * 95ms + 700ms) both;
+  animation: connector-arrow-enter 180ms ease-out calc(var(--summary-delay, 1040ms) + 600ms) both;
 }
 
 @keyframes connector-arrow-enter {
