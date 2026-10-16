@@ -185,14 +185,15 @@ const moreLabel = computed(() => {
       </div>
     </header>
 
-    <div class="flow-canvas" :class="{ 'is-empty': !displayProjects.length }">
+    <div
+      class="flow-canvas"
+      :class="{ 'is-empty': !displayProjects.length }"
+      :style="{ '--summary-delay': '1040ms' }"
+    >
       <template v-if="displayProjects.length">
         <svg
           class="connectors"
-          :style="{
-            '--pill-count': displayProjects.length,
-            '--summary-delay': `${Math.max(0, displayProjects.length - 1) * 95 + 1040}ms`,
-          }"
+          :style="{ '--pill-count': displayProjects.length }"
           viewBox="0 0 606.11 180"
           preserveAspectRatio="none"
           aria-hidden="true"
@@ -222,7 +223,7 @@ const moreLabel = computed(() => {
           <path
             class="connector-line connector-summary connector-summary-down"
             pathLength="1"
-            d="M485.906 106V146"
+            d="M485.906 106V132"
           />
           <path
             class="junction-arrow"
@@ -573,6 +574,7 @@ const moreLabel = computed(() => {
 
 .summary-node {
   position: absolute;
+  animation: flow-result-enter 420ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--summary-delay, 1040ms) + 300ms) both;
   top: 71px;
   left: 70%;
   display: grid;
@@ -604,6 +606,7 @@ const moreLabel = computed(() => {
   --completion-orb-size: 8px;
   --completion-orb-inset: calc(var(--completion-orb-size) / 2 + 1px);
   position: absolute;
+  animation: flow-result-enter 420ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--summary-delay, 1040ms) + 760ms) both;
   top: 132px;
   left: 68%;
   width: 150px;
@@ -614,15 +617,40 @@ const moreLabel = computed(() => {
   color: var(--sc-text);
 }
 
+@keyframes flow-result-enter {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* 填充宽度 =（轨道宽 − 数字格）× 比例，比例由模板写在 --completion-ratio 上。
    两端都收成圆弧，前端跟着光球走。 */
 .completion-fill {
   position: absolute;
   inset: 0 auto 0 0;
   width: calc(var(--completion-area) * var(--completion-ratio, 0));
+  transform: scaleX(1);
+  transform-origin: left center;
+  animation: completion-fill-enter 620ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--summary-delay, 1040ms) + 900ms) both;
   border-radius: var(--sc-radius-pill);
   background: var(--sc-gradient-brand);
   transition: width 0.25s ease;
+}
+
+@keyframes completion-fill-enter {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
 }
 
 /* 光球后面拖出的尾迹：贴中线的一道细楔形，根部只有 8px 高 —— 正好等于光球
@@ -652,6 +680,7 @@ const moreLabel = computed(() => {
 .completion-orb {
   position: absolute;
   top: 50%;
+  animation: completion-orb-enter 620ms cubic-bezier(0.2, 0.75, 0.25, 1) calc(var(--summary-delay, 1040ms) + 900ms) both;
   left: max(
     var(--completion-orb-inset),
     calc(var(--completion-area) * var(--completion-ratio, 0) - var(--completion-orb-inset))
@@ -665,6 +694,19 @@ const moreLabel = computed(() => {
   /* 与填充同一条 transition：光球是坐在填充前端的，只动宽度的话它会先跳到
      终点、填充再慢慢追上来，两者会脱开 0.25s */
   transition: left 0.25s ease;
+}
+
+@keyframes completion-orb-enter {
+  from {
+    left: var(--completion-orb-inset);
+  }
+
+  to {
+    left: max(
+      var(--completion-orb-inset),
+      calc(var(--completion-area) * var(--completion-ratio, 0) - var(--completion-orb-inset))
+    );
+  }
 }
 
 /* 数字格：占住右端固定宽度，让填充与光球都停在它左边。
@@ -845,6 +887,16 @@ const moreLabel = computed(() => {
   }
 
   .project-pill {
+    animation: none;
+  }
+
+  .summary-node,
+  .completion-pill {
+    animation: none;
+  }
+
+  .completion-fill,
+  .completion-orb {
     animation: none;
   }
 
