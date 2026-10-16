@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import {
@@ -46,6 +46,16 @@ async function load() {
     if (historyResponse.code !== 0) throw new Error(historyResponse.message || '检查点历史读取失败')
     recovery.value = response.data
     checkpointHistory.value = historyResponse.data
+    await nextTick()
+    const hashId = route.hash ? decodeURIComponent(route.hash.slice(1)) : ''
+    let target = hashId ? document.getElementById(hashId) : null
+    if (!target && hashId.startsWith('action-')) target = document.getElementById('actions-panel')
+    if (!target && hashId.startsWith('checkpoint-')) {
+      target = document.getElementById('checkpoint-history')
+        ?? document.querySelector('.summary-panel')
+        ?? document.getElementById('empty-checkpoint-title')
+    }
+    if (target && 'scrollIntoView' in target) target.scrollIntoView({ behavior: 'smooth', block: 'center' })
   } catch (reason) {
     error.value = (reason as Error).message || '恢复信息读取失败'
   } finally {
@@ -228,7 +238,7 @@ function buildLocalSummary(data: ProjectRecovery) {
         <p v-else class="no-key-decisions">还没有已采纳的决策记录。</p>
       </section>
 
-      <section v-if="recovery.latestCheckpoint" class="surface summary-panel" aria-labelledby="recovery-summary-title">
+      <section v-if="recovery.latestCheckpoint" :id="`checkpoint-${recovery.latestCheckpoint.id}`" class="surface summary-panel" aria-labelledby="recovery-summary-title">
         <div class="section-heading">
           <span class="section-icon checkpoint-icon" aria-hidden="true">✦</span>
           <div>
@@ -253,14 +263,14 @@ function buildLocalSummary(data: ProjectRecovery) {
         </dl>
       </section>
 
-      <section v-if="olderCheckpoints.length" class="surface checkpoint-history" aria-labelledby="checkpoint-history-title">
+      <section v-if="olderCheckpoints.length" id="checkpoint-history" class="surface checkpoint-history" aria-labelledby="checkpoint-history-title">
         <div class="section-heading history-heading">
           <div>
             <h2 id="checkpoint-history-title">更早的检查点</h2>
             <p>保留每次记录，也可以单独删除不再需要的记录。</p>
           </div>
         </div>
-        <article v-for="checkpoint in olderCheckpoints" :key="checkpoint.id" class="history-row">
+        <article v-for="checkpoint in olderCheckpoints" :id="`checkpoint-${checkpoint.id}`" :key="checkpoint.id" class="history-row">
           <div class="history-copy">
             <time>{{ formatDateTime(checkpoint.createdAt) }}</time>
             <p>{{ checkpoint.summary }}</p>
@@ -282,7 +292,7 @@ function buildLocalSummary(data: ProjectRecovery) {
         </div>
       </section>
 
-      <section class="surface actions-panel" aria-labelledby="actions-title">
+      <section id="actions-panel" class="surface actions-panel" aria-labelledby="actions-title">
         <div class="section-heading">
           <span class="section-icon action-icon" aria-hidden="true">✓</span>
           <div>
@@ -294,7 +304,7 @@ function buildLocalSummary(data: ProjectRecovery) {
         <p v-if="mutationError" class="mutation-error" role="alert">{{ mutationError }}</p>
 
         <div v-if="recovery.actions.length" class="action-list">
-          <article v-for="(action, index) in recovery.actions" :key="action.id" class="action-row">
+          <article v-for="(action, index) in recovery.actions" :id="`action-${action.id}`" :key="action.id" class="action-row">
             <button
               type="button"
               class="status-toggle"

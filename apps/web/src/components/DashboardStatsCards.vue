@@ -1,21 +1,39 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import type { DashboardSummary } from '@/types/dashboard'
+import type { ProjectStatus } from '@/types/project'
 
 const props = defineProps<{ summary: DashboardSummary | null }>()
 
+function filterLocation(filter: { status?: ProjectStatus; archived?: boolean }) {
+  return {
+    name: 'projects',
+    query: {
+      ...(filter.status ? { status: filter.status } : {}),
+      ...(filter.archived ? { archived: 'true' } : {}),
+    },
+  }
+}
+
 const cards = computed(() => [
-  { label: '全部项目', count: props.summary?.totalProjects ?? 0, note: '🌟一步一步积累', icon: 'folder', tone: 'rose' },
-  { label: '进行中', count: props.summary?.activeProjects ?? 0, note: '继续保持节奏', icon: 'play', tone: 'active' },
-  { label: '已暂停', count: props.summary?.pausedProjects ?? 0, note: '随时可以再出发', icon: 'pause', tone: 'paused' },
-  { label: '已完成', count: props.summary?.doneProjects ?? 0, note: '完成后记得庆祝', icon: 'check', tone: 'done' },
-  { label: '已归档', count: props.summary?.archivedProjects ?? 0, note: '把阶段成果收藏好', icon: 'archive', tone: 'archived' },
+  { label: '全部项目', count: props.summary?.totalProjects ?? 0, note: '🌟一步一步积累', icon: 'folder', tone: 'rose', filter: { archived: false } },
+  { label: '进行中', count: props.summary?.activeProjects ?? 0, note: '继续保持节奏', icon: 'play', tone: 'active', filter: { status: 'ACTIVE' as const, archived: false } },
+  { label: '已暂停', count: props.summary?.pausedProjects ?? 0, note: '随时可以再出发', icon: 'pause', tone: 'paused', filter: { status: 'PAUSED' as const, archived: false } },
+  { label: '已完成', count: props.summary?.doneProjects ?? 0, note: '完成后记得庆祝', icon: 'check', tone: 'done', filter: { status: 'DONE' as const, archived: false } },
+  { label: '已归档', count: props.summary?.archivedProjects ?? 0, note: '把阶段成果收藏好', icon: 'archive', tone: 'archived', filter: { archived: true } },
 ])
 </script>
 
 <template>
   <section class="dashboard-stats" aria-label="项目统计">
-    <article v-for="card in cards" :key="card.label" class="stat-card">
+      <RouterLink
+        v-for="card in cards"
+        :key="card.label"
+        class="stat-card"
+        :to="filterLocation(card.filter)"
+        :aria-label="`${card.label}，${card.count} 个项目，查看项目列表`"
+      >
       <span class="stat-icon" :class="`tone-${card.tone}`" aria-hidden="true">
         <svg v-if="card.icon === 'folder'" viewBox="0 0 24 24"><path d="M3.5 6.5h6l2 2h9v9.8a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7z"/><path d="M3.5 9h17"/></svg>
         <svg v-else-if="card.icon === 'play'" viewBox="0 0 24 24"><path d="m8 5.5 11 6.5-11 6.5z"/></svg>
@@ -28,7 +46,7 @@ const cards = computed(() => [
         <span>{{ card.label }}</span>
       </div>
       <p>{{ card.note }}</p>
-    </article>
+      </RouterLink>
   </section>
 </template>
 
@@ -49,10 +67,26 @@ const cards = computed(() => [
   align-items: center;
   column-gap: 16px;
   padding: 20px 24px 14px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
   border: 1px solid var(--sc-border-soft);
   border-radius: 25px;
   background: var(--sc-card-surface);
   box-shadow: var(--sc-shadow-sm);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.stat-card:hover {
+  box-shadow: var(--sc-shadow-md);
+  transform: translateY(-2px);
+}
+
+.stat-card:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--sc-brand-alt) 70%, transparent);
+  outline-offset: 3px;
 }
 
 .stat-icon {

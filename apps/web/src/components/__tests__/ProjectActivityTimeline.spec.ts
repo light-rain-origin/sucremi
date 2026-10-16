@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import ProjectActivityTimeline from '../ProjectActivityTimeline.vue'
 
 vi.mock('@/api/activity', () => ({
@@ -11,6 +12,19 @@ import { getProjectActivities, getRecentActivities } from '@/api/activity'
 
 const mockedProjectActivities = vi.mocked(getProjectActivities)
 const mockedRecentActivities = vi.mocked(getRecentActivities)
+
+function render(props: { projectId?: number; compact?: boolean }) {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/', component: { template: '<div />' } },
+      { path: '/projects/:id', component: { template: '<div />' } },
+      { path: '/projects/:id/recovery', component: { template: '<div />' } },
+      { path: '/projects/:id/decisions/:decisionId', component: { template: '<div />' } },
+    ],
+  })
+  return mount(ProjectActivityTimeline, { props, global: { plugins: [router] } })
+}
 
 const event = {
   id: 1,
@@ -32,7 +46,7 @@ describe('ProjectActivityTimeline', () => {
     mockedProjectActivities.mockResolvedValue({
       code: 0, message: 'OK', data: { list: [event], total: 1, page: 1, size: 10 }, requestId: 'r', timestamp: 1,
     })
-    const wrapper = mount(ProjectActivityTimeline, { props: { projectId: 4 } })
+    const wrapper = render({ projectId: 4 })
     await flushPromises()
 
     expect(mockedProjectActivities).toHaveBeenCalledWith(4, { page: 1, size: 10, type: '' })
@@ -42,7 +56,7 @@ describe('ProjectActivityTimeline', () => {
 
   it('shows a useful empty state and loads recent activities in compact mode', async () => {
     mockedRecentActivities.mockResolvedValue({ code: 0, message: 'OK', data: [], requestId: 'r', timestamp: 1 })
-    const wrapper = mount(ProjectActivityTimeline, { props: { compact: true } })
+    const wrapper = render({ compact: true })
     await flushPromises()
 
     expect(mockedRecentActivities).toHaveBeenCalledWith(5)
@@ -62,7 +76,7 @@ describe('ProjectActivityTimeline', () => {
       requestId: 'r',
       timestamp: 1,
     })
-    const wrapper = mount(ProjectActivityTimeline, { props: { projectId: 4 } })
+    const wrapper = render({ projectId: 4 })
     await flushPromises()
 
     expect(wrapper.text()).toContain('采纳了决策「采用 Pinia」')
@@ -72,10 +86,55 @@ describe('ProjectActivityTimeline', () => {
     mockedProjectActivities.mockResolvedValue({
       code: 50000, message: '活动暂时不可用', data: null as never, requestId: 'r', timestamp: 1,
     })
-    const wrapper = mount(ProjectActivityTimeline, { props: { projectId: 4 } })
+    const wrapper = render({ projectId: 4 })
     await flushPromises()
 
     expect(wrapper.text()).toContain('活动暂时不可用')
     expect(wrapper.find('button').text()).toBe('重试')
+  })
+
+  it('links checkpoint and action events to their recovery records', async () => {
+    mockedProjectActivities.mockResolvedValue({
+      code: 0,
+      message: 'OK',
+      data: {
+        list: [
+          event,
+          { ...event, id: 2, eventType: 'ACTION_COMPLETED', metadata: '{"actionId":19}' },
+        ],
+        total: 2,
+        page: 1,
+        size: 10,
+      },
+      requestId: 'r',
+      timestamp: 1,
+    })
+    const wrapper = render({ projectId: 4 })
+    await flushPromises()
+
+    expect(wrapper.findAll('a').map((link) => link.attributes('href'))).toEqual([
+      '/projects/4/recovery#checkpoint-8',
+      '/projects/4/recovery#action-19',
+    ])
+  })
+
+  it('opens a decision when its id exists and falls back for deleted decisions', async () => {
+    mockedRecentActivities.mockResolvedValue({
+      code: 0,
+      message: 'OK',
+      data: [
+        { ...event, eventType: 'DECISION_ACCEPTED', metadata: '{"decisionId":29,"title":"采用 Pinia"}' },
+        { ...event, id: 2, eventType: 'DECISION_DELETED', metadata: '{"decisionId":30,"title":"旧决策"}' },
+      ],
+      requestId: 'r',
+      timestamp: 1,
+    })
+    const wrapper = render({ compact: true })
+    await flushPromises()
+
+    expect(wrapper.findAll('a').map((link) => link.attributes('href'))).toEqual([
+      '/projects/4/decisions/29',
+      '/projects/4#decision-records',
+    ])
   })
 })

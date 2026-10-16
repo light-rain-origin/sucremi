@@ -128,6 +128,21 @@ describe('RecoveryView', () => {
     expect(wrapper.text()).not.toContain('上次停在这里')
   })
 
+  it('provides stable anchors for activity links to checkpoints and actions', async () => {
+    const checkpoint = {
+      id: 32,
+      projectId: 8,
+      summary: '完成上下文回归',
+      currentFocus: '活动跳转',
+      blockers: null,
+      createdAt: '2026-10-15T12:00:00',
+    }
+    const wrapper = await render(recovery({ latestCheckpoint: checkpoint, actions: [action] }))
+
+    expect(wrapper.find('#checkpoint-32').exists()).toBe(true)
+    expect(wrapper.find('#action-21').exists()).toBe(true)
+  })
+
   it('shows current key decisions and a link to the decision detail', async () => {
     const wrapper = await render(recovery({ keyDecisions: [{ id: 31, title: '采用 Pinia', decision: 'Pinia', rationaleSummary: '更适配 Vue' }] }))
     expect(wrapper.text()).toContain('关键决策')

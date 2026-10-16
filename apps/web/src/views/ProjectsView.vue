@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { useProjectStore } from '@/stores/project'
-import type { ProjectForm } from '@/types/project'
+import type { ProjectForm, ProjectStatus } from '@/types/project'
 import ProjectCard from '@/components/ProjectCard.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import ProjectFormDialog from '@/components/ProjectFormDialog.vue'
@@ -13,6 +13,17 @@ const router = useRouter()
 const route = useRoute()
 const store = useProjectStore()
 const { items, total, loading, error, query } = storeToRefs(store)
+
+const projectStatuses: ProjectStatus[] = ['ACTIVE', 'PAUSED', 'DONE']
+function statusFromRoute(value: unknown): ProjectStatus | '' {
+  const status = Array.isArray(value) ? value[0] : value
+  return typeof status === 'string' && projectStatuses.includes(status as ProjectStatus)
+    ? status as ProjectStatus
+    : ''
+}
+
+query.value.status = statusFromRoute(route.query.status)
+query.value.archived = route.query.archived === 'true'
 
 const dialogVisible = ref(false)
 
@@ -26,6 +37,18 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => [route.query.status, route.query.archived] as const,
+  ([status, archived]) => {
+    const nextStatus = statusFromRoute(status)
+    const nextArchived = archived === 'true'
+    if (query.value.status === nextStatus && query.value.archived === nextArchived) return
+    query.value.status = nextStatus
+    query.value.archived = nextArchived
+    query.value.page = 1
+  },
+)
+
 let timer: ReturnType<typeof setTimeout> | undefined
 function debouncedFetch() {
   clearTimeout(timer)
@@ -37,6 +60,21 @@ watch(
   () => {
     query.value.page = 1
     debouncedFetch()
+  },
+)
+
+watch(
+  () => [query.value.status, query.value.archived] as const,
+  ([status, archived]) => {
+    const nextQuery = { ...route.query }
+    if (status) nextQuery.status = status
+    else delete nextQuery.status
+    if (archived) nextQuery.archived = 'true'
+    else delete nextQuery.archived
+
+    if (nextQuery.status !== route.query.status || nextQuery.archived !== route.query.archived) {
+      void router.replace({ query: nextQuery })
+    }
   },
 )
 

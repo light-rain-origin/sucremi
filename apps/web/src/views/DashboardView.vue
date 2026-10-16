@@ -9,7 +9,7 @@ import DashboardProjectProgress from '@/components/DashboardProjectProgress.vue'
 import ProjectFlowCard from '@/components/ProjectFlowCard.vue'
 import ContinueWorkCard from '@/components/ContinueWorkCard.vue'
 import ProjectActivityTimeline from '@/components/ProjectActivityTimeline.vue'
-import { getProjectRecovery } from '@/api/recovery'
+import { getProjectRecovery, updateActionStatus } from '@/api/recovery'
 import { getProjectActivities } from '@/api/activity'
 import { listProjects } from '@/api/project'
 import type { ProjectActivity } from '@/types/activity'
@@ -28,6 +28,11 @@ interface DashboardTodo {
 const todos = ref<DashboardTodo[]>([])
 const todosLoading = ref(false)
 const todosError = ref<string | null>(null)
+const todoMutationError = ref<string | null>(null)
+const lastCompletedTodo = ref<DashboardTodo | null>(null)
+const busyActionId = ref<number | null>(null)
+const activityTimelineRevision = ref(0)
+const visibleTodos = computed(() => todos.value.slice(0, 5))
 const trendEvents = ref<ProjectActivity[]>([])
 const trendLoading = ref(false)
 const trendError = ref<string | null>(null)
@@ -178,11 +183,49 @@ async function loadTodos() {
         new Date(b.action.createdAt).getTime() - new Date(a.action.createdAt).getTime() ||
         b.action.id - a.action.id,
       )
-      .slice(0, 5)
   } catch (reason) {
     if (sequence === todoRequestSequence) todosError.value = (reason as Error).message || '待办事项读取失败'
   } finally {
     if (sequence === todoRequestSequence) todosLoading.value = false
+  }
+}
+
+async function completeTodo(todo: DashboardTodo) {
+  if (busyActionId.value !== null) return
+  busyActionId.value = todo.action.id
+  todoMutationError.value = null
+  try {
+    const response = await updateActionStatus(todo.project.id, todo.action.id, 'DONE')
+    if (response.code !== 0) throw new Error(response.message || '完成待办失败')
+    todos.value = todos.value.filter((item) => item.action.id !== todo.action.id)
+    lastCompletedTodo.value = todo
+    activityTimelineRevision.value += 1
+    void loadActivityTrend()
+  } catch (reason) {
+    todoMutationError.value = (reason as Error).message || '完成待办失败'
+  } finally {
+    busyActionId.value = null
+  }
+}
+
+async function undoTodoCompletion() {
+  const todo = lastCompletedTodo.value
+  if (!todo || busyActionId.value !== null) return
+  busyActionId.value = todo.action.id
+  todoMutationError.value = null
+  try {
+    const response = await updateActionStatus(todo.project.id, todo.action.id, 'TODO')
+    if (response.code !== 0) throw new Error(response.message || '撤销完成失败')
+    todos.value = [...todos.value, { project: todo.project, action: response.data }].sort((a, b) =>
+      new Date(b.action.createdAt).getTime() - new Date(a.action.createdAt).getTime() || b.action.id - a.action.id,
+    )
+    lastCompletedTodo.value = null
+    activityTimelineRevision.value += 1
+    void loadActivityTrend()
+  } catch (reason) {
+    todoMutationError.value = (reason as Error).message || '撤销完成失败'
+  } finally {
+    busyActionId.value = null
   }
 }
 
@@ -199,6 +242,7 @@ onMounted(() => {
 function openDetail(id: number) {
   router.push(`/projects/${id}`)
 }
+
 </script>
 
 <template>
@@ -269,21 +313,35 @@ function openDetail(id: number) {
             <span>{{ todosError }}</span>
             <button type="button" @click="loadTodos">重试</button>
           </div>
-          <div v-else-if="todos.length === 0" class="dashboard-mini-empty">
-            <span class="empty-mark" aria-hidden="true">✓</span>
-            <strong>暂无待办事项</strong>
-            <p>记下下一步，回来时更容易接上进度。</p>
-          </div>
-          <ul v-else class="todo-list">
-            <li v-for="todo in todos" :key="`${todo.project.id}-${todo.action.id}`" class="todo-item">
-              <span class="todo-check" aria-hidden="true"></span>
-              <RouterLink :to="`/projects/${todo.project.id}/recovery`" class="todo-link">
-                <span class="todo-title">{{ todo.action.title }}</span>
-                <span class="todo-project">{{ todo.project.name }}</span>
-              </RouterLink>
-              <span class="todo-arrow" aria-hidden="true">›</span>
-            </li>
-          </ul>
+          <template v-else>
+            <p v-if="todoMutationError" class="todo-mutation-error" role="alert">{{ todoMutationError }}</p>
+            <div v-if="lastCompletedTodo" class="todo-undo" role="status">
+              <span>已完成：{{ lastCompletedTodo.action.title }}</span>
+              <button type="button" :disabled="busyActionId !== null" @click="undoTodoCompletion">撤销</button>
+            </div>
+            <div v-if="todos.length === 0" class="dashboard-mini-empty">
+              <span class="empty-mark" aria-hidden="true">✓</span>
+              <strong>暂无待办事项</strong>
+              <p>记下下一步，回来时更容易接上进度。</p>
+            </div>
+            <ul v-else class="todo-list">
+              <li v-for="todo in visibleTodos" :key="`${todo.project.id}-${todo.action.id}`" class="todo-item">
+                <span class="todo-check" aria-hidden="true"></span>
+                <RouterLink :to="`/projects/${todo.project.id}/recovery#action-${todo.action.id}`" class="todo-link">
+                  <span class="todo-title">{{ todo.action.title }}</span>
+                  <span class="todo-project">{{ todo.project.name }}</span>
+                </RouterLink>
+                <button
+                  type="button"
+                  class="todo-complete"
+                  :aria-label="`完成待办：${todo.action.title}`"
+                  :disabled="busyActionId !== null"
+                  @click="completeTodo(todo)"
+                >✓</button>
+                <span class="todo-arrow" aria-hidden="true">›</span>
+              </li>
+            </ul>
+          </template>
         </section>
 
         <section class="dashboard-mini-panel activity-panel" aria-labelledby="dashboard-activity-title">
@@ -293,7 +351,7 @@ function openDetail(id: number) {
             </span>
             <h2 id="dashboard-activity-title">近期活动</h2>
           </header>
-          <ProjectActivityTimeline compact />
+          <ProjectActivityTimeline :key="activityTimelineRevision" compact />
         </section>
       </div>
     </div>
@@ -564,12 +622,85 @@ function openDetail(id: number) {
   border-radius: 50%;
 }
 
+.todo-complete {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--sc-status-done) 55%, var(--sc-border-soft));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--sc-status-done) 11%, var(--sc-card-surface));
+  color: var(--sc-status-done);
+  cursor: pointer;
+}
+
+.todo-complete:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--sc-status-done) 20%, var(--sc-card-surface));
+}
+
+.todo-complete:focus-visible,
+.todo-undo button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--sc-brand-alt) 70%, transparent);
+  outline-offset: 2px;
+}
+
+.todo-complete:disabled,
+.todo-undo button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.todo-undo {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 8px 11px;
+  border: 1px solid color-mix(in srgb, var(--sc-status-done) 28%, var(--sc-border-soft));
+  border-radius: var(--sc-radius-md);
+  background: color-mix(in srgb, var(--sc-status-done) 8%, var(--sc-card-surface));
+  color: var(--sc-text-secondary);
+  font-size: 12px;
+}
+
+.todo-undo span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todo-undo button {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--sc-status-done) 48%, var(--sc-border-soft));
+  border-radius: var(--sc-radius-pill);
+  background: var(--sc-card-surface);
+  color: var(--sc-status-done);
+  font: inherit;
+  cursor: pointer;
+}
+
+.todo-mutation-error {
+  margin: 10px 0 0;
+  color: var(--sc-error-strong);
+  font-size: 12px;
+}
+
 .todo-link {
   display: flex;
   min-width: 0;
   flex: 1;
   flex-direction: column;
   gap: 3px;
+}
+
+.todo-link:focus-visible {
+  border-radius: 3px;
+  outline: 2px solid var(--sc-brand-alt-strong);
+  outline-offset: 2px;
 }
 
 .todo-title,

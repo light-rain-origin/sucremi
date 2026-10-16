@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { archiveProject, getProject, unarchiveProject, updateProject } from '@/api/project'
@@ -36,7 +36,12 @@ async function load() {
   error.value = null
   try {
     const res = await getProject(id)
-    if (res.code === 0) project.value = res.data
+    if (res.code === 0) {
+      project.value = res.data
+      await nextTick()
+      const target = route.hash ? document.getElementById(decodeURIComponent(route.hash.slice(1))) : null
+      if (target && 'scrollIntoView' in target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
     else error.value = res.message
   } catch (e) {
     error.value = (e as Error).message || '加载失败'

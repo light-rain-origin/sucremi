@@ -18,6 +18,7 @@ vi.mock('@/api/project', () => ({
 }))
 vi.mock('@/api/recovery', () => ({
   getProjectRecovery: vi.fn<typeof import('@/api/recovery').getProjectRecovery>(),
+  updateActionStatus: vi.fn<typeof import('@/api/recovery').updateActionStatus>(),
 }))
 vi.mock('@/api/activity', () => ({
   getRecentActivities: vi.fn<typeof import('@/api/activity').getRecentActivities>(),
@@ -25,25 +26,29 @@ vi.mock('@/api/activity', () => ({
 }))
 
 import { getDashboardSummary, getProjectFlow } from '@/api/dashboard'
-import { getProjectRecovery } from '@/api/recovery'
-import { getRecentActivities } from '@/api/activity'
+import { getProjectRecovery, updateActionStatus } from '@/api/recovery'
+import { getProjectActivities, getRecentActivities } from '@/api/activity'
+import { listProjects } from '@/api/project'
 
 const mocked = vi.mocked(getDashboardSummary)
 const mockedProjectFlow = vi.mocked(getProjectFlow)
 const mockedRecovery = vi.mocked(getProjectRecovery)
+const mockedUpdateActionStatus = vi.mocked(updateActionStatus)
 const mockedActivities = vi.mocked(getRecentActivities)
+const mockedProjectActivities = vi.mocked(getProjectActivities)
+const mockedProjects = vi.mocked(listProjects)
 
 function render() {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/', component: { template: '<div />' } },
-      { path: '/projects', component: { template: '<div />' } },
+      { path: '/projects', name: 'projects', component: { template: '<div />' } },
       { path: '/projects/:id', component: { template: '<div />' } },
       { path: '/projects/:id/recovery', component: { template: '<div />' } },
     ],
   })
-  return mount(DashboardView, { global: { plugins: [ElementPlus, createPinia(), router] } })
+  return { wrapper: mount(DashboardView, { global: { plugins: [ElementPlus, createPinia(), router] } }), router }
 }
 
 const summary: DashboardSummary = {
@@ -73,8 +78,25 @@ describe('DashboardView', () => {
     mocked.mockReset()
     mockedProjectFlow.mockReset()
     mockedRecovery.mockReset()
+    mockedUpdateActionStatus.mockReset()
     mockedActivities.mockReset()
+    mockedProjectActivities.mockReset()
+    mockedProjects.mockReset()
     mockedActivities.mockResolvedValue({ code: 0, message: 'OK', data: [], requestId: 'activity', timestamp: 1 })
+    mockedProjectActivities.mockResolvedValue({
+      code: 0,
+      message: 'OK',
+      data: { list: [], total: 0, page: 1, size: 100 },
+      requestId: 'project-activity',
+      timestamp: 1,
+    })
+    mockedProjects.mockResolvedValue({
+      code: 0,
+      message: 'OK',
+      data: { list: [], total: 0, page: 1, size: 100 },
+      requestId: 'archived-projects',
+      timestamp: 1,
+    })
     mockedRecovery.mockImplementation(async (projectId) => ({
       code: 0,
       message: 'OK',
@@ -111,7 +133,7 @@ describe('DashboardView', () => {
 
   it('renders the five stat cards with backend counts', async () => {
     mocked.mockResolvedValue({ code: 0, message: 'OK', data: summary, requestId: 'r', timestamp: 1 })
-    const wrapper = render()
+    const { wrapper } = render()
     await flushPromises()
 
     const text = wrapper.text()
@@ -145,7 +167,7 @@ describe('DashboardView', () => {
       requestId: 'r',
       timestamp: 1,
     })
-    const wrapper = render()
+    const { wrapper } = render()
     await flushPromises()
 
     expect(wrapper.text()).toContain('先创建一个项目，记录下每次努力的起点')
@@ -160,9 +182,93 @@ describe('DashboardView', () => {
       timestamp: 1,
     })
     mocked.mockResolvedValue({ code: 0, message: 'OK', data: summary, requestId: 'r', timestamp: 1 })
-    const wrapper = render()
+    const { wrapper } = render()
     await flushPromises()
 
     expect(wrapper.text()).toContain('项目进度读取失败')
+  })
+
+  it('routes a statistics card to the matching project filter', async () => {
+    mocked.mockResolvedValue({ code: 0, message: 'OK', data: summary, requestId: 'r', timestamp: 1 })
+    const { wrapper, router } = render()
+    await flushPromises()
+
+    await wrapper.findAll('.stat-card').find((card) => card.text().includes('已暂停'))!.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/projects?status=PAUSED')
+  })
+
+  it('opens a project detail from the recent-updates card', async () => {
+    mocked.mockResolvedValue({ code: 0, message: 'OK', data: summary, requestId: 'r', timestamp: 1 })
+    const { wrapper, router } = render()
+    await flushPromises()
+
+    await wrapper.get('.project-pill').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/projects/5')
+  })
+
+  it('completes a todo through the API and can undo the completion', async () => {
+    const action = {
+      id: 71,
+      projectId: 5,
+      title: '完成首页交互',
+      details: null,
+      status: 'TODO' as const,
+      sortOrder: 0,
+      createdAt: '2026-10-15T10:00:00',
+      updatedAt: '2026-10-15T10:00:00',
+      completedAt: null,
+    }
+    mocked.mockResolvedValue({ code: 0, message: 'OK', data: summary, requestId: 'r', timestamp: 1 })
+    mockedRecovery.mockImplementation(async (projectId) => ({
+      code: 0,
+      message: 'OK',
+      data: {
+        project: summary.recentProjects[0]!,
+        latestCheckpoint: null,
+        actions: Number(projectId) === 5 ? [action] : [],
+        recoverySummary: null,
+        keyDecisions: [],
+      },
+      requestId: 'recovery',
+      timestamp: 1,
+    }))
+    mockedUpdateActionStatus.mockResolvedValueOnce({
+      code: 50000,
+      message: '暂时无法完成',
+      data: null as never,
+      requestId: 'action-status-error',
+      timestamp: 1,
+    })
+    mockedUpdateActionStatus.mockImplementation(async (_projectId, _actionId, status) => ({
+      code: 0,
+      message: 'OK',
+      data: { ...action, status, completedAt: status === 'DONE' ? '2026-10-16T10:00:00' : null },
+      requestId: 'action-status',
+      timestamp: 1,
+    }))
+
+    const { wrapper } = render()
+    await flushPromises()
+
+    expect(wrapper.find('.todo-link').attributes('href')).toBe('/projects/5/recovery#action-71')
+    await wrapper.get('.todo-complete').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.todo-link').exists()).toBe(true)
+    expect(wrapper.text()).toContain('暂时无法完成')
+
+    await wrapper.get('.todo-complete').trigger('click')
+    await flushPromises()
+    expect(mockedUpdateActionStatus).toHaveBeenLastCalledWith(5, 71, 'DONE')
+    expect(wrapper.text()).toContain('撤销')
+    expect(wrapper.find('.todo-link').exists()).toBe(false)
+
+    await wrapper.get('.todo-undo button').trigger('click')
+    await flushPromises()
+    expect(mockedUpdateActionStatus).toHaveBeenLastCalledWith(5, 71, 'TODO')
+    expect(wrapper.find('.todo-link').exists()).toBe(true)
   })
 })

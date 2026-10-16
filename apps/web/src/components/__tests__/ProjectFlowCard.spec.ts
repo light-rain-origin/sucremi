@@ -83,6 +83,15 @@ describe('ProjectFlowCard', () => {
     expect(bar.attributes('aria-valuenow')).toBe('30')
   })
 
+  it('supports arrow-key navigation across the status tabs', async () => {
+    const wrapper = render()
+    const firstTab = wrapper.get('[role="tab"]')
+
+    await firstTab.trigger('keydown', { key: 'ArrowRight' })
+
+    expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-selected')).toBe('true')
+  })
+
   it('emits the selected project id and the view-all action', async () => {
     const wrapper = render()
 

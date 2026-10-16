@@ -268,6 +268,13 @@ watch(
   transform: translateY(-1px);
 }
 
+.continue-link:focus-visible,
+.continue-state button:focus-visible,
+.empty-state a:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--sc-brand-alt) 70%, transparent);
+  outline-offset: 3px;
+}
+
 .continue-state {
   display: flex;
   min-height: 92px;

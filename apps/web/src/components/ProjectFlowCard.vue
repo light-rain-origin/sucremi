@@ -41,6 +41,23 @@ const tabs: { id: ProjectTab; label: string }[] = [
   { id: 'completed', label: '已完成' },
 ]
 
+function handleTabKeydown(event: KeyboardEvent) {
+  const buttons = Array.from(
+    (event.currentTarget as HTMLElement).parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [],
+  )
+  const currentIndex = buttons.indexOf(event.currentTarget as HTMLButtonElement)
+  let nextIndex: number | null = null
+  if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length
+  if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
+  if (event.key === 'Home') nextIndex = 0
+  if (event.key === 'End') nextIndex = tabs.length - 1
+  if (nextIndex === null) return
+
+  event.preventDefault()
+  buttons[nextIndex]?.focus()
+  selectTab(tabs[nextIndex]!.id)
+}
+
 const counts = computed<Record<ProjectTab, number>>(() => ({
   unfinished: props.flow?.unfinishedCount ?? 0,
   ongoing: props.flow?.ongoingCount ?? 0,
@@ -184,6 +201,7 @@ const moreLabel = computed(() => {
           class="tab"
           :class="{ selected: selectedTab === tab.id }"
           :aria-selected="selectedTab === tab.id"
+          @keydown="handleTabKeydown"
           @click="selectTab(tab.id)"
         >
           <span>{{ tab.label }}</span>
@@ -358,6 +376,12 @@ const moreLabel = computed(() => {
 .tab:hover,
 .tab.selected {
   color: var(--sc-brand-alt-strong);
+}
+
+.tab:focus-visible,
+.project-pill:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--sc-brand-alt) 70%, transparent);
+  outline-offset: 3px;
 }
 
 .tab.selected {
@@ -819,6 +843,11 @@ const moreLabel = computed(() => {
 
 .view-all:hover {
   color: var(--sc-brand-strong);
+}
+
+.view-all:focus-visible {
+  outline: 2px solid var(--sc-brand-alt-strong);
+  outline-offset: 3px;
 }
 
 @media (max-width: 560px) {

@@ -51,9 +51,9 @@ const filterOptions: Array<{ label: string; value: ProjectActivityType | '' }> =
 function eventLabel(event: ProjectActivity) {
   if (event.eventType === 'PROJECT_STATUS_CHANGED') {
     try {
-      const metadata = JSON.parse(event.metadata) as { from?: string; to?: string }
+      const metadata = parseMetadata(event)
       const statusLabels: Record<string, string> = { ACTIVE: '进行中', PAUSED: '已暂停', DONE: '已完成' }
-      if (metadata.from && metadata.to) {
+      if (typeof metadata.from === 'string' && typeof metadata.to === 'string') {
         return `状态从${statusLabels[metadata.from] ?? metadata.from}调整为${statusLabels[metadata.to] ?? metadata.to}`
       }
     } catch {
@@ -61,14 +61,52 @@ function eventLabel(event: ProjectActivity) {
     }
   }
   if (event.eventType.startsWith('DECISION_')) {
-    try {
-      const metadata = JSON.parse(event.metadata) as { title?: string }
-      if (metadata.title) return `${eventLabels[event.eventType]}「${metadata.title}」`
-    } catch {
-      // 无法解析的历史元数据仍显示通用事件说明。
-    }
+    const metadata = parseMetadata(event)
+    if (typeof metadata.title === 'string' && metadata.title) return `${eventLabels[event.eventType]}「${metadata.title}」`
   }
   return eventLabels[event.eventType] ?? '更新了项目'
+}
+
+function parseMetadata(event: ProjectActivity): Record<string, unknown> {
+  try {
+    const value: unknown = JSON.parse(event.metadata)
+    return value !== null && typeof value === 'object' ? value as Record<string, unknown> : {}
+  } catch {
+    return {}
+  }
+}
+
+function metadataId(event: ProjectActivity, key: string): number | null {
+  const value = parseMetadata(event)[key]
+  const id = typeof value === 'number' ? value : Number(value)
+  return Number.isSafeInteger(id) && id > 0 ? id : null
+}
+
+function eventTarget(event: ProjectActivity) {
+  const projectPath = `/projects/${event.projectId}`
+  switch (event.eventType) {
+    case 'CHECKPOINT_CREATED': {
+      const checkpointId = metadataId(event, 'checkpointId')
+      return checkpointId ? `${projectPath}/recovery#checkpoint-${checkpointId}` : `${projectPath}/recovery`
+    }
+    case 'ACTION_CREATED':
+    case 'ACTION_COMPLETED':
+    case 'ACTION_REOPENED': {
+      const actionId = metadataId(event, 'actionId')
+      return actionId ? `${projectPath}/recovery#action-${actionId}` : `${projectPath}/recovery`
+    }
+    case 'DECISION_CREATED':
+    case 'DECISION_UPDATED':
+    case 'DECISION_ACCEPTED':
+    case 'DECISION_SUPERSEDED': {
+      const decisionId = metadataId(event, 'decisionId')
+      return decisionId ? `${projectPath}/decisions/${decisionId}` : `${projectPath}#decision-records`
+    }
+    case 'DECISION_DELETED':
+      return `${projectPath}#decision-records`
+    default:
+      return projectPath
+  }
 }
 
 async function load() {
@@ -131,16 +169,11 @@ onMounted(load)
     <ol v-else class="timeline-list">
       <li v-for="event in events" :key="event.id" class="timeline-item">
         <span class="timeline-dot" aria-hidden="true"></span>
-        <RouterLink v-if="compact" class="event-copy event-link" :to="`/projects/${event.projectId}`">
+        <RouterLink class="event-copy event-link" :to="eventTarget(event)" :aria-label="`${event.projectName}：${eventLabel(event)}`">
           <strong class="event-project">{{ event.projectName }}</strong>
           <span class="event-label">{{ eventLabel(event) }}</span>
           <time :datetime="event.createdAt">{{ formatDateTime(event.createdAt) }}</time>
         </RouterLink>
-        <div v-else class="event-copy">
-          <strong class="event-project">{{ event.projectName }}</strong>
-          <span class="event-label">{{ eventLabel(event) }}</span>
-          <time :datetime="event.createdAt">{{ formatDateTime(event.createdAt) }}</time>
-        </div>
       </li>
     </ol>
     <nav v-if="!compact && total > size" class="timeline-pagination" aria-label="活动分页">
@@ -167,11 +200,13 @@ onMounted(load)
 .event-label { color: var(--sc-text-secondary); font-size: var(--sc-font-size-md); }
 .event-copy time { color: var(--sc-text-placeholder); font-size: var(--sc-font-size-sm); }
 .event-link { color: inherit; text-decoration: none; }
+.event-link:focus-visible { border-radius: 4px; outline: 2px solid var(--sc-brand-alt-strong); outline-offset: 3px; }
 .event-link:hover .event-project, .event-link:hover .event-label { color: var(--sc-brand-alt-strong); }
 .timeline-state { display: flex; min-height: 120px; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--sc-text-secondary); text-align: center; font-size: var(--sc-font-size-md); }
 .empty-star { color: var(--sc-brand-alt); font-size: 22px; }
 .empty-state strong { color: var(--sc-text); font-weight: 600; }
 .timeline-state button, .timeline-pagination button { padding: 6px 11px; border: 1px solid var(--sc-border-strong); border-radius: var(--sc-radius-pill); background: var(--sc-panel); color: var(--sc-brand-alt-strong); font: inherit; cursor: pointer; }
+.timeline-state button:focus-visible, .timeline-pagination button:focus-visible, .filter-label select:focus-visible { outline: 2px solid var(--sc-brand-alt-strong); outline-offset: 2px; }
 .error-state { color: var(--sc-error-strong); }
 .timeline-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 14px; color: var(--sc-text-secondary); font-size: var(--sc-font-size-sm); }
 .timeline-pagination button:disabled { opacity: .45; cursor: default; }
