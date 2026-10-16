@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import DashboardProjectProgress from '../DashboardProjectProgress.vue'
 
 describe('DashboardProjectProgress', () => {
@@ -26,8 +27,7 @@ describe('DashboardProjectProgress', () => {
     expect(wrapper.find('.tone-done').exists()).toBe(true)
     expect(wrapper.find('.tone-archived').exists()).toBe(true)
     expect(wrapper.find('.tone-active').attributes('d')).toContain('Q')
-    expect(wrapper.findAll('clipPath path')).toHaveLength(1)
-    expect(wrapper.find('clipPath path').attributes('d')).toContain('A 75 75')
+    expect(wrapper.find('clipPath').exists()).toBe(true)
     expect(wrapper.find('g[clip-path]').attributes('clip-path')).toMatch(/^url\(#.+\)$/)
   })
 
@@ -57,5 +57,49 @@ describe('DashboardProjectProgress', () => {
 
     expect(wrapper.find('.donut-svg').element).not.toBe(emptySvg)
     expect(wrapper.findAll('.donut-segment')).toHaveLength(1)
+  })
+
+  it('keeps the clip geometry mounted while the full circle takes over', async () => {
+    const frameCallbacks: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frameCallbacks.push(callback)
+      return frameCallbacks.length
+    })
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined)
+    vi.spyOn(performance, 'now').mockReturnValue(100)
+
+    const wrapper = mount(DashboardProjectProgress, {
+      props: {
+        summary: {
+          totalProjects: 1,
+          activeProjects: 1,
+          pausedProjects: 0,
+          doneProjects: 0,
+          archivedProjects: 0,
+          recentProjects: [],
+        },
+      },
+    })
+
+    const firstFrame = frameCallbacks[frameCallbacks.length - 1]
+    expect(firstFrame).toBeDefined()
+    expect(wrapper.find('clipPath circle').attributes('r')).toBe('0')
+    firstFrame?.(1060)
+    await nextTick()
+
+    const clipBeforeFinish = wrapper.find('clipPath path').attributes('d')
+    expect(wrapper.find('clipPath circle').attributes('r')).toBe('100')
+
+    const lastFrame = frameCallbacks[frameCallbacks.length - 1]
+    lastFrame?.(1100)
+    await nextTick()
+
+    expect(wrapper.find('clipPath path').exists()).toBe(true)
+    expect(wrapper.find('clipPath path').attributes('d')).toBe(clipBeforeFinish)
+    expect(wrapper.find('clipPath circle').attributes('r')).toBe('100')
+    expect(wrapper.findAll('.donut-segment')).toHaveLength(1)
+
+    wrapper.unmount()
+    vi.restoreAllMocks()
   })
 })

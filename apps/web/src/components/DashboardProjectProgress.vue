@@ -4,7 +4,7 @@ import type { DashboardSummary } from '@/types/dashboard'
 
 const props = defineProps<{ summary: DashboardSummary | null }>()
 const chartId = useId()
-const animationProgress = ref(1)
+const animationProgress = ref(0)
 let animationFrame = 0
 
 const total = computed(() =>
@@ -88,10 +88,12 @@ const displayedSegments = computed(() => donutSegments.value.map((segment) => ({
 })))
 
 const revealClipId = `${chartId}-expansion`
+const clipHandoffProgress = 0.9995
+const clipComplete = computed(() => animationProgress.value >= clipHandoffProgress)
 const revealClipPath = computed(() => {
-  const progress = animationProgress.value
+  // Preserve the arc at the end; the mounted circle supplies the full clip.
+  const progress = Math.min(animationProgress.value, clipHandoffProgress)
   if (progress <= 0) return 'M 75 75 L 75 0 Z'
-  if (progress >= 1) return 'M 75 75 L 75 0 A 75 75 0 0 1 75 150 A 75 75 0 0 1 75 0 Z'
 
   const endAngle = -90 + progress * 360
   const end = point(75, endAngle)
@@ -165,6 +167,7 @@ function percent(count: number) {
           <defs>
             <clipPath :id="revealClipId" clipPathUnits="userSpaceOnUse">
               <path :d="revealClipPath" />
+              <circle cx="75" cy="75" :r="clipComplete ? 100 : 0" />
             </clipPath>
           </defs>
           <g :clip-path="`url(#${revealClipId})`">
