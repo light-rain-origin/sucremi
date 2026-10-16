@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import SkinSwitcher from '@/components/SkinSwitcher.vue'
@@ -29,6 +29,7 @@ function readColorMode(): ColorMode {
 }
 
 const colorMode = ref<ColorMode>(readColorMode())
+const colorModeButton = ref<HTMLButtonElement | null>(null)
 const notificationOpen = ref(false)
 const notificationButton = ref<HTMLButtonElement | null>(null)
 const searchExpanded = ref(false)
@@ -72,13 +73,46 @@ function applyColorMode() {
 
 applyColorMode()
 
-function toggleColorMode() {
-  colorMode.value = colorMode.value === 'light' ? 'dark' : 'light'
+function commitColorMode(nextMode: ColorMode) {
+  colorMode.value = nextMode
   applyColorMode()
   try {
     window.localStorage.setItem(COLOR_MODE_KEY, colorMode.value)
   } catch {
     // 本次会话仍可切换；存储不可用时刷新后回到浅色。
+  }
+}
+
+function toggleColorMode(event: MouseEvent) {
+  const nextMode: ColorMode = colorMode.value === 'light' ? 'dark' : 'light'
+  const button = colorModeButton.value
+  if (button) {
+    const bounds = button.getBoundingClientRect()
+    const originX = event.detail > 0 ? event.clientX : bounds.left + bounds.width / 2
+    const originY = event.detail > 0 ? event.clientY : bounds.top + bounds.height / 2
+    document.documentElement.style.setProperty('--sc-theme-reveal-x', `${originX}px`)
+    document.documentElement.style.setProperty('--sc-theme-reveal-y', `${originY}px`)
+  }
+
+  const transitionDocument = document as Document & {
+    startViewTransition?: (update: () => void | Promise<void>) => { finished: Promise<void> }
+  }
+  const startViewTransition = transitionDocument.startViewTransition
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  if (!startViewTransition || reducedMotion) {
+    commitColorMode(nextMode)
+    return
+  }
+
+  try {
+    const transition = startViewTransition.call(document, async () => {
+      commitColorMode(nextMode)
+      await nextTick()
+    })
+    void transition.finished.catch(() => undefined)
+  } catch {
+    commitColorMode(nextMode)
   }
 }
 
@@ -188,6 +222,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleSearchShortcut
       >
         <button
           class="toolbar-button color-mode-action"
+          ref="colorModeButton"
           type="button"
           :aria-label="colorMode === 'light' ? '切换至深色模式' : '切换至浅色模式'"
           @click="toggleColorMode"
@@ -222,8 +257,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleSearchShortcut
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(180px, 1.4fr) minmax(220px, 1fr);
   align-items: center;
-  height: 45px;
-  min-height: 45px;
+  height: 48px;
+  min-height: 48px;
   margin: 20px 21px 0;
   padding: 0 20px;
   border: 1px solid color-mix(in srgb, var(--sc-border-soft) 72%, transparent);
@@ -305,7 +340,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleSearchShortcut
   min-width: 0;
   width: min(100%, clamp(220px, 24vw, 360px));
   max-width: 100%;
-  height: 30px;
+  height: 35px;
   align-items: center;
   gap: 8px;
   justify-self: center;
