@@ -151,9 +151,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleSearchShortcut
         <AppIcon name="menu" :size="20" />
       </button>
       <h1 class="page-title">
-        <Transition :name="titleTransition">
-          <span :key="title" class="page-title-text">{{ title }}</span>
-        </Transition>
+        <span class="page-title-accent" aria-hidden="true" />
+        <span class="page-title-viewport">
+          <Transition :name="titleTransition">
+            <span :key="title" class="page-title-text">{{ title }}</span>
+          </Transition>
+        </span>
       </h1>
     </div>
 
@@ -276,19 +279,39 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleSearchShortcut
 
 .navigation-heading {
   gap: 12px;
+  margin-left: -4px;
 }
 
 .page-title {
-  position: relative;
-  width: 5em;
-  height: 1.2em;
-  overflow: hidden;
+  display: flex;
+  width: 165px;
+  max-width: 100%;
+  min-width: 0;
+  height: 18px;
+  align-items: center;
+  gap: 10px;
+  flex: 0 1 165px;
   margin: 0;
-  color: var(--sc-page-title-color);
-  font-size: 20px;
+  color: #51445f;
+  font-size: 18px;
   font-weight: 600;
-  letter-spacing: 0.04em;
   line-height: 1.2;
+}
+
+.page-title-accent {
+  width: 3px;
+  height: 16px;
+  flex: 0 0 3px;
+  border-radius: 999px;
+  background: #d5b4f5;
+}
+
+.page-title-viewport {
+  position: relative;
+  height: 1.2em;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .page-title-text {
@@ -299,6 +322,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleSearchShortcut
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+:global(html[data-color-mode='dark'] .page-title) {
+  color: var(--sc-text-secondary);
+}
+
+:global(html[data-color-mode='dark'] .page-title-text) {
+  color: var(--sc-text);
+}
+
+:global(html[data-color-mode='dark'] .page-title-accent) {
+  background: color-mix(in srgb, var(--sc-brand-alt) 45%, var(--sc-bg));
 }
 
 .page-title-up-enter-active,
@@ -609,6 +644,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleSearchShortcut
 
   .menu-toggle {
     display: inline-flex;
+  }
+
+  .navigation-heading {
+    margin-left: 0;
   }
 
   .search-display {
