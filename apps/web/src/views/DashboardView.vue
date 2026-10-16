@@ -81,12 +81,13 @@ function openDetail(id: number) {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  container-type: inline-size;
 }
 
 .dashboard-lower-row {
   display: grid;
   width: 100%;
-  grid-template-columns: minmax(0, 1106.72px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1106.72px) minmax(320px, 1fr);
   align-items: start;
   column-gap: 20px;
   row-gap: 18px;
@@ -94,8 +95,9 @@ function openDetail(id: number) {
 
 .dashboard-primary-group {
   display: grid;
+  width: 100%;
   min-width: 0;
-  grid-template-columns: minmax(0, 666.72px) 420px;
+  grid-template-columns: minmax(0, 666.72px) minmax(320px, 1fr);
   column-gap: 20px;
   row-gap: 18px;
 }
@@ -110,6 +112,7 @@ function openDetail(id: number) {
   min-width: 0;
   flex-direction: column;
   gap: 18px;
+  container-type: inline-size;
 }
 
 .dashboard-mini-panel {
@@ -219,28 +222,19 @@ function openDetail(id: number) {
   line-height: 1.65;
 }
 
-@media (max-width: 1784px) {
+@container (max-width: 1486px) {
   .dashboard-lower-row {
-    width: 100%;
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .dashboard-primary-group {
-    grid-template-columns: minmax(0, 1fr) 370px;
   }
 
   .dashboard-third-column {
-    width: min(100%, 420px);
+    width: 100%;
     grid-column: 1;
-    justify-self: end;
+    justify-self: stretch;
   }
 }
 
-@media (max-width: 900px) {
-  .dashboard-lower-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
+@container (max-width: 820px) {
   .dashboard-primary-group {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -249,10 +243,28 @@ function openDetail(id: number) {
     grid-column: auto;
   }
 
-  .dashboard-third-column {
-    width: 100%;
-    grid-column: auto;
-    justify-self: stretch;
+  .dashboard-primary-group :deep(.project-flow-card) {
+    justify-self: center;
+  }
+}
+
+@container (min-width: 700px) {
+  .dashboard-mini-empty {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 14px;
+    text-align: left;
+  }
+
+  .dashboard-mini-empty .empty-mark {
+    flex: 0 0 38px;
+    margin: 0;
+  }
+
+  .dashboard-mini-empty p {
+    max-width: none;
+    margin: 0 0 0 auto;
+    text-align: right;
   }
 }
 

@@ -357,6 +357,32 @@ function percent(count: number) {
   color: var(--sc-brand);
 }
 
+@container (min-width: 560px) {
+  .progress-content {
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .progress-donut {
+    width: min(180px, 36%);
+    flex-basis: 180px;
+  }
+
+  .progress-legend {
+    display: grid;
+    flex: 1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: center;
+    column-gap: 20px;
+    row-gap: 16px;
+  }
+
+  .progress-legend li {
+    grid-template-columns: 12px minmax(0, 1fr) auto;
+    column-gap: 8px;
+  }
+}
+
 @media (max-width: 900px) {
   .dashboard-side-card {
     height: auto;
