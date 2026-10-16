@@ -47,8 +47,8 @@ function openDetail(id: number) {
           />
         </div>
       </div>
-      <aside class="dashboard-third-card" aria-label="待办与近期活动">
-        <section class="dashboard-mini-panel" aria-labelledby="dashboard-todo-title">
+      <aside class="dashboard-third-column" aria-label="待办与近期活动">
+        <section class="dashboard-mini-panel todo-panel" aria-labelledby="dashboard-todo-title">
           <header class="dashboard-mini-header">
             <span class="dashboard-mini-icon todo-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M8 5.5h11M8 12h11M8 18.5h7"/><path d="m3.5 5.5 1.2 1.2 2-2.4M3.5 12l1.2 1.2 2-2.4M3.5 18.5l1.2 1.2 2-2.4"/></svg>
@@ -85,7 +85,8 @@ function openDetail(id: number) {
 
 .dashboard-lower-row {
   display: grid;
-  grid-template-columns: minmax(0, 1006.72px) minmax(0, 1fr);
+  width: 100%;
+  grid-template-columns: minmax(0, 1106.72px) minmax(0, 1fr);
   align-items: start;
   column-gap: 20px;
   row-gap: 18px;
@@ -94,7 +95,7 @@ function openDetail(id: number) {
 .dashboard-primary-group {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(0, 666.72px) 320px;
+  grid-template-columns: minmax(0, 666.72px) 420px;
   column-gap: 20px;
   row-gap: 18px;
 }
@@ -104,31 +105,30 @@ function openDetail(id: number) {
   grid-column: 1 / -1;
 }
 
-.dashboard-third-card {
+.dashboard-third-column {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dashboard-mini-panel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 18px;
   border: 1px solid var(--sc-border-soft);
   border-radius: var(--sc-radius-xl);
   background: var(--sc-card-surface);
   box-shadow: var(--sc-shadow-md);
 }
 
-.dashboard-third-card {
-  height: 375px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  padding: 20px 18px;
-  min-width: 0;
-}
-
-.dashboard-mini-panel {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
+.todo-panel {
+  min-height: 260px;
 }
 
 .activity-panel {
-  margin-left: 16px;
-  padding-left: 16px;
-  border-left: 1px solid var(--sc-border-soft);
+  min-height: 315px;
 }
 
 .dashboard-mini-header {
@@ -219,17 +219,20 @@ function openDetail(id: number) {
   line-height: 1.65;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1784px) {
   .dashboard-lower-row {
+    width: 100%;
     grid-template-columns: minmax(0, 1fr);
   }
 
   .dashboard-primary-group {
-    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-columns: minmax(0, 1fr) 370px;
   }
 
-  .dashboard-third-card {
-    grid-column: auto;
+  .dashboard-third-column {
+    width: min(100%, 420px);
+    grid-column: 1;
+    justify-self: end;
   }
 }
 
@@ -246,28 +249,20 @@ function openDetail(id: number) {
     grid-column: auto;
   }
 
-  .dashboard-third-card {
+  .dashboard-third-column {
     width: 100%;
-  }
-
-  .dashboard-third-card {
     grid-column: auto;
+    justify-self: stretch;
   }
 }
 
 @media (max-width: 560px) {
-  .dashboard-third-card {
-    height: auto;
-    min-height: 375px;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
+  .dashboard-mini-panel {
+    padding: 18px 16px;
   }
 
   .activity-panel {
-    margin: 0;
-    padding: 16px 0 0;
-    border-top: 1px solid var(--sc-border-soft);
-    border-left: 0;
+    min-height: 0;
   }
 }
 </style>

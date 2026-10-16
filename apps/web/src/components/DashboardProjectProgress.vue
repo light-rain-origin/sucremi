@@ -243,7 +243,7 @@ function percent(count: number) {
   flex: 1;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 20px;
   padding-inline: 0;
   min-height: 0;
 }
@@ -251,11 +251,11 @@ function percent(count: number) {
 .progress-donut {
   position: relative;
   display: grid;
-  width: min(150px, 48%);
+  width: min(168px, 46%);
   aspect-ratio: 1;
   height: auto;
-  flex: 0 1 150px;
-  min-width: 120px;
+  flex: 0 1 168px;
+  min-width: 128px;
   place-items: center;
   border-radius: 50%;
 }
@@ -312,7 +312,7 @@ function percent(count: number) {
   min-width: 0;
   flex: 0 1 auto;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -320,16 +320,16 @@ function percent(count: number) {
 
 .progress-legend li {
   display: grid;
-  grid-template-columns: 11px auto auto;
+  grid-template-columns: 12px minmax(0, auto) auto;
   align-items: center;
-  column-gap: 7px;
+  column-gap: 8px;
   color: var(--sc-text-secondary);
   font-size: clamp(12px, 4.4cqi, var(--sc-font-size-lg));
 }
 
 .legend-dot {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
 }
 
