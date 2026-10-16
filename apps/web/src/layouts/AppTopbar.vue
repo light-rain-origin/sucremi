@@ -261,9 +261,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleSearchShortcut
   min-height: 48px;
   margin: 20px 21px 0;
   padding: 0 20px;
-  border: 1px solid color-mix(in srgb, var(--sc-border-soft) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sc-border-soft) 80%, transparent);
   border-radius: 15px;
-  background: color-mix(in srgb, var(--sc-panel) 72%, transparent);
+  background: color-mix(in srgb, var(--sc-panel) 80%, transparent);
   box-shadow: none;
 }
 
