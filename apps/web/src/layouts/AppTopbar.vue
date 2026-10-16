@@ -111,15 +111,14 @@ function toggleColorMode() {
   display: grid;
   grid-template-columns: minmax(170px, 1fr) minmax(280px, 360px) minmax(220px, 1fr);
   align-items: center;
-  height: 60px;
-  min-height: 60px;
+  height: 56px;
+  min-height: 56px;
   margin: 20px 21px 0;
-  padding: 0 20px 0 28px;
-  border: 1px solid var(--sc-border-soft);
-  border-radius: 18px;
-  background: var(--sc-panel);
-  box-shadow: var(--sc-shadow-sm);
-  backdrop-filter: blur(18px);
+  padding: 0 20px;
+  border: 1px solid color-mix(in srgb, var(--sc-border-soft) 72%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--sc-panel) 72%, transparent);
+  box-shadow: none;
 }
 
 .navigation-heading,
@@ -349,8 +348,8 @@ function toggleColorMode() {
 @media (max-width: 768px) {
   .app-top-navigation {
     grid-template-columns: minmax(0, 1fr) auto;
-    height: 60px;
-    min-height: 60px;
+    height: 56px;
+    min-height: 56px;
     margin: 20px 12px 0;
     padding: 0 12px;
     border-radius: 16px;
