@@ -26,11 +26,9 @@ describe('DashboardProjectProgress', () => {
     expect(wrapper.find('.tone-done').exists()).toBe(true)
     expect(wrapper.find('.tone-archived').exists()).toBe(true)
     expect(wrapper.find('.tone-active').attributes('d')).toContain('Q')
-    expect(wrapper.findAll('.donut-reveal-mask')).toHaveLength(1)
-    expect(wrapper.find('.donut-reveal-mask').attributes('d')).toBe(
-      'M 75 10 A 65 65 0 0 1 75 140 A 65 65 0 0 1 75 10',
-    )
-    expect(wrapper.findAll('.donut-segment').every((segment) => segment.attributes('mask')?.startsWith('url(#'))).toBe(true)
+    expect(wrapper.findAll('clipPath path')).toHaveLength(1)
+    expect(wrapper.find('clipPath path').attributes('d')).toContain('A 75 75')
+    expect(wrapper.find('g[clip-path]').attributes('clip-path')).toMatch(/^url\(#.+\)$/)
   })
 
   it('keeps the empty track and zero percentages when there are no projects', () => {
@@ -40,5 +38,24 @@ describe('DashboardProjectProgress', () => {
     expect(wrapper.findAll('path.donut-segment')).toHaveLength(0)
     expect(wrapper.find('.donut-center').text()).toContain('0 个')
     expect(wrapper.findAll('.progress-legend strong').every((item) => item.text() === '0%')).toBe(true)
+  })
+
+  it('restarts the entrance animation when dashboard data arrives after an empty render', async () => {
+    const wrapper = mount(DashboardProjectProgress, { props: { summary: null } })
+    const emptySvg = wrapper.find('.donut-svg').element
+
+    await wrapper.setProps({
+      summary: {
+        totalProjects: 1,
+        activeProjects: 1,
+        pausedProjects: 0,
+        doneProjects: 0,
+        archivedProjects: 0,
+        recentProjects: [],
+      },
+    })
+
+    expect(wrapper.find('.donut-svg').element).not.toBe(emptySvg)
+    expect(wrapper.findAll('.donut-segment')).toHaveLength(1)
   })
 })

@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import type { DashboardSummary } from '@/types/dashboard'
 
 const props = defineProps<{ summary: DashboardSummary | null }>()
 const chartId = useId()
+const animationProgress = ref(1)
+let animationFrame = 0
 
 const total = computed(() =>
   (props.summary?.totalProjects ?? 0) + (props.summary?.archivedProjects ?? 0),
@@ -71,12 +73,67 @@ const donutSegments = computed(() => {
     cursor += segmentAngle
     return {
       ...item,
-      path: roundedSegmentPath(startAngle, endAngle),
+      startAngle,
+      endAngle,
     }
   })
 })
 
-const revealMaskId = `${chartId}-reveal`
+const displayedSegments = computed(() => donutSegments.value.map((segment) => ({
+  ...segment,
+  path: roundedSegmentPath(
+    -90 + (segment.startAngle + 90) * animationProgress.value,
+    -90 + (segment.endAngle + 90) * animationProgress.value,
+  ),
+})))
+
+const revealClipId = `${chartId}-expansion`
+const revealClipPath = computed(() => {
+  const progress = animationProgress.value
+  if (progress <= 0) return 'M 75 75 L 75 0 Z'
+  if (progress >= 1) return 'M 75 75 L 75 0 A 75 75 0 0 1 75 150 A 75 75 0 0 1 75 0 Z'
+
+  const endAngle = -90 + progress * 360
+  const end = point(75, endAngle)
+  const format = (value: number) => Number(value.toFixed(3))
+  return `M 75 75 L 75 0 A 75 75 0 ${progress > 0.5 ? 1 : 0} 1 ${format(end.x)} ${format(end.y)} Z`
+})
+
+function easeInOutCubic(progress: number) {
+  return progress < 0.5
+    ? 4 * progress * progress * progress
+    : 1 - Math.pow(-2 * progress + 2, 3) / 2
+}
+
+function startExpansionAnimation() {
+  cancelAnimationFrame(animationFrame)
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    animationProgress.value = 1
+    return
+  }
+
+  const duration = 1000
+  const startedAt = performance.now()
+  animationProgress.value = 0
+
+  const step = (now: number) => {
+    const elapsed = Math.min((now - startedAt) / duration, 1)
+    animationProgress.value = easeInOutCubic(elapsed)
+    if (elapsed < 1) animationFrame = requestAnimationFrame(step)
+  }
+
+  animationFrame = requestAnimationFrame(step)
+}
+
+onMounted(() => {
+  if (donutSegments.value.length) startExpansionAnimation()
+})
+
+watch(() => donutSegments.value.length > 0, (hasSegments) => {
+  if (hasSegments) startExpansionAnimation()
+})
+
+onBeforeUnmount(() => cancelAnimationFrame(animationFrame))
 
 function percent(count: number) {
   return total.value ? Math.round((count / total.value) * 100) : 0
@@ -98,24 +155,27 @@ function percent(count: number) {
         role="img"
         :aria-label="`共 ${total} 个项目，进行中 ${summary?.activeProjects ?? 0} 个`"
       >
-        <svg class="donut-svg" viewBox="0 0 150 150" aria-hidden="true">
+        <svg
+          :key="total > 0 ? 'loaded' : 'empty'"
+          class="donut-svg"
+          viewBox="0 0 150 150"
+          aria-hidden="true"
+        >
           <circle class="donut-track" cx="75" cy="75" r="65" />
           <defs>
-            <mask :id="revealMaskId" maskUnits="userSpaceOnUse" x="0" y="0" width="150" height="150">
-              <path
-                class="donut-reveal-mask"
-                d="M 75 10 A 65 65 0 0 1 75 140 A 65 65 0 0 1 75 10"
-              />
-            </mask>
+            <clipPath :id="revealClipId" clipPathUnits="userSpaceOnUse">
+              <path :d="revealClipPath" />
+            </clipPath>
           </defs>
-          <path
-            v-for="segment in donutSegments"
-            :key="segment.label"
-            class="donut-segment"
-            :class="`tone-${segment.tone}`"
-            :d="segment.path"
-            :mask="`url(#${revealMaskId})`"
-          />
+          <g :clip-path="`url(#${revealClipId})`">
+            <path
+              v-for="segment in displayedSegments"
+              :key="segment.label"
+              class="donut-segment"
+              :class="`tone-${segment.tone}`"
+              :d="segment.path"
+            />
+          </g>
         </svg>
         <div class="donut-center">
           <span>进行中</span>
@@ -203,9 +263,6 @@ function percent(count: number) {
   width: 100%;
   height: 100%;
   overflow: visible;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: donut-chart-entrance 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .donut-track,
@@ -221,35 +278,10 @@ function percent(count: number) {
   fill: var(--segment-color);
 }
 
-.donut-reveal-mask {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 24px;
-  stroke-linecap: butt;
-  stroke-dasharray: 0 408.4;
-  animation: donut-ring-reveal 1100ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
 .donut-segment.tone-active { --segment-color: var(--sc-status-active); }
 .donut-segment.tone-paused { --segment-color: var(--sc-status-paused); }
 .donut-segment.tone-done { --segment-color: var(--sc-status-done); }
 .donut-segment.tone-archived { --segment-color: var(--sc-status-archived); }
-
-@keyframes donut-ring-reveal {
-  from { stroke-dasharray: 0 408.4; }
-  to { stroke-dasharray: 408.4 408.4; }
-}
-
-@keyframes donut-chart-entrance {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
 
 .donut-center {
   position: relative;
@@ -329,14 +361,4 @@ function percent(count: number) {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .donut-reveal-mask {
-    animation: none;
-    stroke-dasharray: 408.4 408.4;
-  }
-
-  .donut-svg {
-    animation: none;
-  }
-}
 </style>
